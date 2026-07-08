@@ -1,0 +1,94 @@
+<div class="page-wrapper almacen-theme">
+  
+  <!-- ── Header ─────────────────────────────────────────────── -->
+  <div class="page-header">
+    <div class="page-title-group">
+      <button class="btn-back-reservados" (click)="volver()">
+        <span class="material-symbols-outlined">arrow_back</span>
+      </button>
+      <div>
+        <h1 class="page-title">Stock de Materiales Reservados</h1>
+        <p class="page-subtitle">Vista consolidada del stock comprometido por vales pendientes de despacho</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Filtros ─────────────────────────────────────────────── -->
+  <div class="filter-bar">
+    <div class="filter-controls">
+      <!-- Buscador -->
+      <div class="search-wrapper">
+        <span class="material-symbols-outlined search-icon">search</span>
+        <input
+          class="search-input"
+          type="text"
+          placeholder="Buscar por código o descripción..."
+          [(ngModel)]="filtroBusqueda"
+        />
+        @if (filtroBusqueda()) {
+          <button class="clear-btn" (click)="filtroBusqueda.set('')">
+            <span class="material-symbols-outlined">close</span>
+          </button>
+        }
+      </div>
+    </div>
+    <span class="badge-count">{{ materialesReservadosFiltrados.length }} registro(s)</span>
+  </div>
+
+  <!-- ── Mensaje de Error ────────────────────────────────────── -->
+  @if (mensajeError()) {
+    <div class="toast toast-error">
+      <span class="material-symbols-outlined">error</span>
+      {{ mensajeError() }}
+    </div>
+  }
+
+  <!-- ── Tabla ───────────────────────────────────────────────── -->
+  <div class="table-card">
+    @if (cargando()) {
+      <div class="table-loader">
+        <div class="spinner-lg"></div>
+        <p>Cargando información de reservas...</p>
+      </div>
+    } @else if (materialesReservadosFiltrados.length === 0) {
+      <div class="table-empty">
+        <span class="material-symbols-outlined empty-icon">assignment_turned_in</span>
+        <p>No se registran materiales reservados en vales pendientes.</p>
+      </div>
+    } @else {
+      <div class="table-responsive">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Código Material</th>
+              <th>Descripción</th>
+              <th class="text-right">Cantidad Reservada</th>
+              <th class="col-actions">Kardex</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (m of materialesReservadosFiltrados; track m.id_material) {
+              <tr>
+                <td>
+                  <span class="code-badge">{{ m.cod_materia }}</span>
+                </td>
+                <td class="font-bold text-dark">{{ m.descripcion }}</td>
+                <td class="text-right font-bold text-reserve-qty">
+                  {{ m.cantidad_reservada }}
+                </td>
+                <td>
+                  <div class="actions-group">
+                    <button class="btn-icon btn-kardex" title="Ver Historial de Kardex" (click)="verKardex(m.id_material)">
+                      <span class="material-symbols-outlined">history</span>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </div>
+
+</div>

@@ -1,0 +1,472 @@
+<div class="page-wrapper">
+  <!-- Page Header -->
+  <header class="page-header">
+    <div class="page-title-group">
+      <span class="material-symbols-outlined page-icon" style="color: #e86b1a;">store</span>
+      <div>
+        <h1 class="page-title">Administración de Proveedores</h1>
+        <p class="page-subtitle">Gestiona la base de datos de proveedores, contactos comerciales y sus categorías
+          asociadas.</p>
+      </div>
+    </div>
+    <button class="btn-primary" (click)="abrirNuevoProveedorModal()"
+      style="background: linear-gradient(135deg, #f97316, #e86b1a); box-shadow: 0 3px 12px rgba(232, 107, 26, 0.3);">
+      <span class="material-symbols-outlined">add</span>
+      Nuevo Proveedor
+    </button>
+  </header>
+
+  <!-- Filter Bar -->
+  @if (filterForm) {
+    <section class="filter-bar" [formGroup]="filterForm">
+      <div class="filter-grid" style="grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); width: 100%;">
+      <!-- Search RUC -->
+      <div class="search-wrapper">
+        <span class="material-symbols-outlined search-icon">pin</span>
+        <input type="text" placeholder="Filtrar por RUC..." class="search-input" formControlName="ruc"
+          (input)="cargarProveedores()">
+      </div>
+
+      <!-- Search Name -->
+      <div class="search-wrapper">
+        <span class="material-symbols-outlined search-icon">search</span>
+        <input type="text" placeholder="Buscar por Nombre / Razón Social..." class="search-input"
+          formControlName="razonSocial" (input)="cargarProveedores()">
+      </div>
+
+      <!-- Filter Category -->
+      <select class="filter-select" formControlName="codCat" (change)="cargarProveedores()">
+        <option value="">Todas las Categorías</option>
+        @for (cat of categorias(); track cat.cod_cat) {
+          <option [value]="cat.cod_cat">{{ cat.nombre_cat }}</option>
+        }
+      </select>
+
+      <!-- Actions -->
+      <div class="filter-actions" style="margin-left: auto;">
+        <button class="btn-ghost" (click)="limpiarFiltros()" title="Limpiar Filtros">
+          <span class="material-symbols-outlined">restart_alt</span>
+          Limpiar
+        </button>
+        <span class="badge-count">{{ proveedores().length }} registros</span>
+      </div>
+      </div>
+    </section>
+  }
+
+  <!-- Toast Notifications -->
+  @if (successMessage()) {
+    <div class="toast toast-success">
+      <span class="material-symbols-outlined">check_circle</span>
+      <span>{{ successMessage() }}</span>
+    </div>
+  }
+  @if (errorMessage()) {
+    <div class="toast toast-error">
+      <span class="material-symbols-outlined">error</span>
+      <span>{{ errorMessage() }}</span>
+    </div>
+  }
+
+  <!-- Table Card -->
+  <main class="table-card">
+    @if (loading()) {
+      <div class="table-loader">
+        <div class="spinner-lg" style="border-top-color: #e86b1a;"></div>
+        <p>Cargando lista de proveedores...</p>
+      </div>
+    }
+
+    @if (!loading() && proveedores().length === 0) {
+      <div class="table-empty">
+        <span class="material-symbols-outlined empty-icon">sentiment_dissatisfied</span>
+        <p>No se encontraron proveedores que coincidan con la búsqueda.</p>
+      </div>
+    }
+
+    @if (!loading() && proveedores().length > 0) {
+      <div class="table-responsive">
+        <table class="data-table">
+        <thead>
+          <tr>
+            <th class="col-index">#</th>
+            <th>RUC</th>
+            <th>Razón Social</th>
+            <th>Nombre Comercial</th>
+            <th>Categorías</th>
+            <th>Correo</th>
+            <th>Teléfono</th>
+            <th class="text-center">Contactos</th>
+            <th>Estado</th>
+            <th class="col-actions">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (p of proveedores(); track p.ruc; let i = $index) {
+            <tr>
+              <td class="col-index text-muted">{{ i + 1 }}</td>
+            <td>
+              <span class="code-badge"
+                style="color: #e86b1a; background: rgba(232, 107, 26, 0.08); border-color: rgba(232, 107, 26, 0.2);">
+                {{ p.ruc }}
+              </span>
+            </td>
+            <td style="font-weight: 600;">{{ p.razon_social }}</td>
+            <td class="text-muted">{{ p.nombre_comercial || '-' }}</td>
+            <td>
+              <div style="display: flex; flex-wrap: wrap; gap: 0.25rem;">
+                @for (cat of p.categorias; track cat) {
+                  <span class="category-name-badge">
+                    {{ cat }}
+                  </span>
+                }
+                @if (!p.categorias || p.categorias.length === 0) {
+                  <span class="text-muted" style="font-size: 0.8rem;">-</span>
+                }
+              </div>
+            </td>
+            <td>{{ p.correo || '-' }}</td>
+            <td>{{ p.telefono || '-' }}</td>
+            <td class="text-center">
+              <button class="btn-ghost" (click)="abrirContactosModal(p)"
+                style="padding: 0.25rem 0.6rem; font-size: 0.75rem; border-radius: 6px;">
+                <span class="material-symbols-outlined" style="font-size: 0.95rem;">group</span>
+                {{ p.contactos.length }} contactos
+              </button>
+            </td>
+            <td>
+              <span class="category-name-badge" [ngClass]="{
+                'text-success-badge': p.estado === 'ACTIVO',
+                'text-danger-badge': p.estado === 'INACTIVO'
+              }">
+                {{ p.estado }}
+              </span>
+            </td>
+            <td class="col-actions">
+              <div class="actions-group">
+                <button class="btn-icon btn-edit" (click)="abrirEditarProveedorModal(p)" title="Editar Proveedor"
+                  style="color: #e86b1a; background: rgba(232, 107, 26, 0.08);">
+                  <span class="material-symbols-outlined">edit</span>
+                </button>
+                <button class="btn-icon btn-ghost" (click)="abrirContactosModal(p)" title="Gestionar Contactos"
+                  style="color: #6b7280;">
+                  <span class="material-symbols-outlined">contact_phone</span>
+                </button>
+              </div>
+            </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+  </main>
+
+  <!-- ── Proveedor Add/Edit Modal ───────────────────────────── -->
+  @if (showProveedorModal()) {
+    <div class="modal-backdrop">
+      <div class="modal-card" style="max-width: 650px;">
+        <header class="modal-header">
+          <div class="modal-title-group">
+            <span class="material-symbols-outlined modal-icon" style="color: #e86b1a;">{{ isEditingProveedor() ? 'edit' :
+              'store' }}</span>
+            <h2 class="modal-title">{{ isEditingProveedor() ? 'Editar Proveedor' : 'Registrar Nuevo Proveedor' }}</h2>
+          </div>
+          <button class="modal-close" (click)="cerrarProveedorModal()">
+            <span class="material-symbols-outlined">close</span>
+          </button>
+        </header>
+
+        <form [formGroup]="proveedorForm" (ngSubmit)="guardarProveedor()">
+          <div class="modal-body" style="max-height: 70vh; overflow-y: auto;">
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+              <!-- RUC -->
+              <div class="form-group">
+                <label>RUC (11 dígitos) *</label>
+                <div class="input-wrapper" [class.input-disabled]="isEditingProveedor()">
+                  <span class="material-symbols-outlined input-icon">badge</span>
+                <input type="text" formControlName="ruc" placeholder="Ej. 20502123456" maxlength="11">
+              </div>
+              @if (proveedorForm.get('ruc')?.touched && proveedorForm.get('ruc')?.invalid) {
+                <span class="form-error-alert" style="margin-top: 0.2rem;">
+                  <span class="material-symbols-outlined">warning</span>
+                  RUC requerido (11 números).
+                </span>
+              }
+            </div>
+
+            <!-- Estado -->
+            <div class="form-group">
+              <label>Estado *</label>
+              <select class="filter-select" formControlName="estado" style="height: 38px;">
+                <option value="ACTIVO">ACTIVO</option>
+                <option value="INACTIVO">INACTIVO</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Razón Social -->
+          <div class="form-group">
+            <label>Razón Social *</label>
+            <div class="input-wrapper">
+              <span class="material-symbols-outlined input-icon">business</span>
+              <input type="text" formControlName="razon_social" placeholder="Nombre legal de la empresa">
+            </div>
+            @if (proveedorForm.get('razon_social')?.touched && proveedorForm.get('razon_social')?.invalid) {
+              <span class="form-error-alert" style="margin-top: 0.2rem;">
+                <span class="material-symbols-outlined">warning</span>
+                Razón Social es obligatoria.
+              </span>
+            }
+          </div>
+
+          <!-- Nombre Comercial -->
+          <div class="form-group">
+            <label>Nombre Comercial</label>
+            <div class="input-wrapper">
+              <span class="material-symbols-outlined input-icon">storefront</span>
+              <input type="text" formControlName="nombre_comercial" placeholder="Nombre comercial o fantasia">
+            </div>
+          </div>
+
+          <!-- Dirección -->
+          <div class="form-group">
+            <label>Dirección Fiscal</label>
+            <div class="input-wrapper">
+              <span class="material-symbols-outlined input-icon">location_on</span>
+              <input type="text" formControlName="direccion" placeholder="Calle, Número, Distrito, Provincia">
+            </div>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+            <!-- Correo -->
+            <div class="form-group">
+              <label>Correo Electrónico</label>
+              <div class="input-wrapper">
+                <span class="material-symbols-outlined input-icon">mail</span>
+                <input type="email" formControlName="correo" placeholder="ejemplo@proveedor.com">
+              </div>
+              @if (proveedorForm.get('correo')?.touched && proveedorForm.get('correo')?.invalid) {
+                <span class="form-error-alert" style="margin-top: 0.2rem;">
+                  <span class="material-symbols-outlined">warning</span>
+                  Formato de correo no válido.
+                </span>
+              }
+            </div>
+
+            <!-- Teléfono -->
+            <div class="form-group">
+              <label>Teléfono de Contacto</label>
+              <div class="input-wrapper">
+                <span class="material-symbols-outlined input-icon">call</span>
+                <input type="text" formControlName="telefono" placeholder="Ej. (01) 615-6000 o celular">
+              </div>
+            </div>
+          </div>
+
+            <!-- Categorías Checklist -->
+            <div class="form-group">
+              <label style="margin-bottom: 0.2rem;">Categorías de Proveedor</label>
+              <p class="field-hint" style="margin-bottom: 0.5rem;">Selecciona las categorías de productos/servicios que
+                ofrece este proveedor.</p>
+              <div
+                style="display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 0.5rem; max-height: 120px; overflow-y: auto; padding: 0.5rem; border: 1.5px solid #e5e7eb; border-radius: 8px;">
+                @for (cat of categorias(); track cat.cod_cat) {
+                  <div style="display: flex; align-items: center; gap: 0.5rem;">
+                    <input type="checkbox" [id]="'cat_' + cat.cod_cat" [checked]="isCategoryChecked(cat.cod_cat)"
+                      (change)="onCategoryChange(cat.cod_cat, $event)"
+                      style="cursor: pointer; width: 16px; height: 16px; accent-color: #e86b1a;">
+                    <label [for]="'cat_' + cat.cod_cat"
+                      style="font-weight: 500; font-size: 0.8rem; cursor: pointer; color: #4b5563;">
+                      {{ cat.nombre_cat }}
+                    </label>
+                  </div>
+                }
+              </div>
+            </div>
+
+          </div>
+
+        <footer class="modal-footer">
+          <button type="button" class="btn-ghost" (click)="cerrarProveedorModal()">Cancelar</button>
+          <button type="submit" class="btn-primary" [disabled]="submitting()" style="background: #e86b1a;">
+            <span class="spinner-sm spinner-white" *ngIf="submitting()"></span>
+            Guardar Cambios
+          </button>
+        </footer>
+      </form>
+    </div>
+  </div>
+}
+
+  <!-- ── Contactos Manager Modal ────────────────────────────── -->
+  @if (showContactoModal()) {
+    <div class="modal-backdrop">
+      <div class="modal-card" style="max-width: 800px;">
+        <header class="modal-header">
+          <div class="modal-title-group">
+            <span class="material-symbols-outlined modal-icon" style="color: #e86b1a;">group</span>
+            <div>
+              <h2 class="modal-title">Contactos de Proveedor</h2>
+              <p class="field-hint" style="margin: 0; color: #4b5563;">Proveedor: <strong style="color: #1a1a2e;">{{
+                  selectedProveedor()?.razon_social }} (RUC: {{ selectedProveedor()?.ruc }})</strong></p>
+            </div>
+        </div>
+        <button class="modal-close" (click)="cerrarContactosModal()">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </header>
+
+      <div class="modal-body"
+        style="display: grid; grid-template-columns: 3fr 2fr; gap: 1.5rem; max-height: 70vh; overflow-y: auto;">
+
+        <!-- Contact List (Left Side) -->
+        <div>
+          <h3 style="font-size: 0.9rem; font-weight: 700; color: #1f2937; margin-bottom: 0.75rem;">Contactos Registrados
+          </h3>
+
+          @if (!selectedProveedor()?.contactos || selectedProveedor()?.contactos?.length === 0) {
+            <div style="padding: 3rem 1rem; border: 1.5px dashed #e5e7eb; border-radius: 8px; text-align: center; color: #9ca3af; font-size: 0.82rem;">
+              <span class="material-symbols-outlined"
+                style="font-size: 2.2rem; color: #d1d5db; margin-bottom: 0.25rem;">contact_support</span>
+              <p>No hay contactos comerciales registrados para este proveedor.</p>
+            </div>
+          }
+
+          @if (selectedProveedor()?.contactos && selectedProveedor()!.contactos.length > 0) {
+            <div style="display: flex; flex-direction: column; gap: 0.65rem;">
+              @for (c of selectedProveedor()!.contactos; track c.id_contacto) {
+                <div style="display: flex; align-items: center; justify-content: space-between; padding: 0.75rem; border: 1px solid #e5e7eb; border-radius: 8px; transition: background 0.15s;"
+                  [style.border-color]="c.id_contacto === selectedContacto()?.id_contacto ? '#e86b1a' : '#e5e7eb'"
+                  [style.background]="c.id_contacto === selectedContacto()?.id_contacto ? '#fff7ed' : '#fff'">
+                  <div style="display: flex; flex-direction: column; gap: 0.15rem;">
+                    <span style="font-weight: 600; font-size: 0.85rem; color: #111827;">{{ c.nombre }} {{ c.apellido1 }} {{
+                      c.apellido2 }}</span>
+                    <span class="text-muted" style="display: flex; align-items: center; gap: 0.25rem; font-size: 0.75rem;">
+                      <span class="material-symbols-outlined" style="font-size: 0.85rem;">mail</span>{{ c.correo || 'Sin
+                      correo' }}
+                    </span>
+                    <span class="text-muted" style="display: flex; align-items: center; gap: 0.25rem; font-size: 0.75rem;">
+                      <span class="material-symbols-outlined" style="font-size: 0.85rem;">call</span>{{ c.telefono || 'Sin
+                      tel.' }}
+                    </span>
+                  </div>
+                  <div style="display: flex; align-items: center; gap: 0.5rem;">
+                    <span class="category-name-badge" [ngClass]="{
+                      'text-success-badge': c.estado === 'ACTIVO',
+                      'text-danger-badge': c.estado === 'INACTIVO'
+                    }" style="font-size: 0.7rem; padding: 0.15rem 0.4rem;">
+                      {{ c.estado }}
+                    </span>
+                    <button class="btn-icon btn-edit" (click)="editarContacto(c)" title="Editar Contacto"
+                      style="width: 28px; height: 28px;">
+                      <span class="material-symbols-outlined" style="font-size: 0.9rem;">edit</span>
+                    </button>
+                  </div>
+                </div>
+              }
+            </div>
+          }
+        </div>
+
+        <!-- Contact Form (Right Side) -->
+        <div
+          style="background: #f9fafb; padding: 1rem; border-radius: 10px; border: 1px solid #e5e7eb; height: fit-content;">
+          <h3 style="font-size: 0.9rem; font-weight: 700; color: #1f2937; margin-top: 0; margin-bottom: 0.85rem;">
+            {{ isEditingContacto() ? 'Editar Contacto' : 'Agregar Contacto' }}
+          </h3>
+
+          <form [formGroup]="contactoForm" (ngSubmit)="guardarContacto()"
+            style="display: flex; flex-direction: column; gap: 0.85rem;">
+            <!-- Nombre -->
+            <div class="form-group">
+              <label>Nombre *</label>
+              <div class="input-wrapper" style="background: #fff;">
+                <input type="text" formControlName="nombre" placeholder="Nombre de pila">
+              </div>
+              @if (contactoForm.get('nombre')?.touched && contactoForm.get('nombre')?.invalid) {
+                <span class="form-error-alert" style="padding: 0.4rem;">
+                  Requerido.
+                </span>
+              }
+            </div>
+
+            <!-- Primer Apellido -->
+            <div class="form-group">
+              <label>Primer Apellido *</label>
+              <div class="input-wrapper" style="background: #fff;">
+                <input type="text" formControlName="apellido1" placeholder="Apellido paterno">
+              </div>
+              @if (contactoForm.get('apellido1')?.touched && contactoForm.get('apellido1')?.invalid) {
+                <span class="form-error-alert" style="padding: 0.4rem;">
+                  Requerido.
+                </span>
+              }
+            </div>
+
+            <!-- Segundo Apellido -->
+            <div class="form-group">
+              <label>Segundo Apellido</label>
+              <div class="input-wrapper" style="background: #fff;">
+                <input type="text" formControlName="apellido2" placeholder="Apellido materno">
+              </div>
+            </div>
+
+            <!-- Correo -->
+            <div class="form-group">
+              <label>Correo</label>
+              <div class="input-wrapper" style="background: #fff;">
+                <input type="email" formControlName="correo" placeholder="correo@empresa.com">
+              </div>
+              @if (contactoForm.get('correo')?.touched && contactoForm.get('correo')?.invalid) {
+                <span class="form-error-alert" style="padding: 0.4rem;">
+                  Formato no válido.
+                </span>
+              }
+            </div>
+
+            <!-- Teléfono -->
+            <div class="form-group">
+              <label>Teléfono</label>
+              <div class="input-wrapper" style="background: #fff;">
+                <input type="text" formControlName="telefono" placeholder="Ej. 999 888 777">
+              </div>
+            </div>
+
+            <!-- Estado -->
+            <div class="form-group">
+              <label>Estado *</label>
+              <select class="filter-select" formControlName="estado" style="height: 38px; background-color: #fff;">
+                <option value="ACTIVO">ACTIVO</option>
+                <option value="INACTIVO">INACTIVO</option>
+              </select>
+            </div>
+
+            <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem;">
+              @if (isEditingContacto()) {
+                <button type="button" class="btn-ghost" (click)="cancelarEdicionContacto()"
+                  style="flex: 1; padding: 0.5rem; font-size: 0.8rem;">
+                  Cancelar
+                </button>
+              }
+              <button type="submit" class="btn-primary" [disabled]="submitting()"
+                style="flex: 1; padding: 0.5rem; font-size: 0.8rem; background: #e86b1a; box-shadow: none; justify-content: center;">
+                @if (submitting()) {
+                  <span class="spinner-sm spinner-white"></span>
+                }
+                {{ isEditingContacto() ? 'Actualizar' : 'Agregar' }}
+              </button>
+            </div>
+          </form>
+        </div>
+
+      </div>
+
+      <footer class="modal-footer">
+        <button class="btn-ghost" (click)="cerrarContactosModal()">Finalizar</button>
+      </footer>
+    </div>
+  </div>
+}
+</div>

@@ -1,0 +1,75 @@
+<div class="modal-backdrop" (click)="close()">
+  <div class="modal-card modal-lg" (click)="$event.stopPropagation()" style="max-width: 900px; display: flex; flex-direction: column; max-height: 85vh;">
+    
+    <div class="modal-header">
+      <div class="modal-title-group">
+        <span class="material-symbols-outlined modal-icon">search</span>
+        <h2 class="modal-title">Seleccionar Equipo</h2>
+      </div>
+      <button class="modal-close" (click)="close()">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+
+    <div class="modal-body" style="overflow-y: auto; flex: 1; padding: 1.5rem;">
+      
+      <div class="filter-bar" style="margin-bottom: 1rem;">
+        <div class="search-wrapper" style="max-width: 100%;">
+          <span class="material-symbols-outlined search-icon">search</span>
+          <input type="text" class="search-input" [(ngModel)]="searchTerm" placeholder="Buscar por código, placa, vin, motor..." />
+        </div>
+      </div>
+
+      <div class="table-card" style="box-shadow: none;">
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Código</th>
+                <th>Placa</th>
+                <th>Tipo</th>
+                <th>Modelo / Marca</th>
+                <th class="col-actions text-center">Acción</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (equipo of filteredEquipos(); track equipo.idEquipo) {
+                <tr>
+                  <td>
+                    <span class="code-badge" style="color: #3b82f6; background: rgba(59, 130, 246, 0.1); border-color: rgba(59, 130, 246, 0.2);">
+                      {{ equipo.codEqp }}
+                    </span>
+                  </td>
+                  <td>{{ equipo.placaEqp }}</td>
+                  <td class="text-muted-sm">{{ equipo.nombreTipo }}</td>
+                  <td>
+                    <div class="cell-stacked">
+                      <span class="cell-main">{{ equipo.nombreModelo }}</span>
+                      <span class="cell-sub">{{ equipo.nombreMarca }}</span>
+                    </div>
+                  </td>
+                  <td class="col-actions text-center">
+                    <button class="btn-primary" (click)="select(equipo)" style="padding: 0.4rem 0.8rem; font-size: 0.75rem; background: rgba(59, 130, 246, 0.1); color: #3b82f6; box-shadow: none;">
+                      Seleccionar
+                    </button>
+                  </td>
+                </tr>
+              } @empty {
+                <tr>
+                  <td colspan="5">
+                    <div class="table-empty" style="padding: 2rem;">
+                      <span class="material-symbols-outlined empty-icon">search_off</span>
+                      <p>No se encontraron equipos.</p>
+                    </div>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+</div>

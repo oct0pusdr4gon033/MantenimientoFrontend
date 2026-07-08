@@ -1,0 +1,107 @@
+<div class="page-wrapper mantenimiento-theme">
+  
+  <!-- ── Header ─────────────────────────────────────────────── -->
+  <div class="page-header">
+    <div class="page-title-group">
+      <span class="material-symbols-outlined page-icon">inventory</span>
+      <div>
+        <h1 class="page-title">Kardex de Inventario General</h1>
+        <p class="page-subtitle">Consulte el inventario de materiales y acceda a su historial de movimientos (Kardex)</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Filtros y Buscador ───────────────────────────────────── -->
+  <div class="filter-bar">
+    <div class="filter-controls">
+      <div class="search-wrapper">
+        <span class="material-symbols-outlined search-icon">search</span>
+        <input
+          class="search-input"
+          type="text"
+          placeholder="Buscar por código, descripción o categoría..."
+          [ngModel]="filtroBusqueda()"
+          (ngModelChange)="filtroBusqueda.set($event)"
+        />
+        @if (filtroBusqueda()) {
+          <button class="clear-btn" (click)="filtroBusqueda.set('')">
+            <span class="material-symbols-outlined">close</span>
+          </button>
+        }
+      </div>
+    </div>
+    <span class="badge-count">{{ materialesFiltrados().length }} repuesto(s)</span>
+  </div>
+
+  <!-- ── Mensaje de Error ────────────────────────────────────── -->
+  @if (mensajeError()) {
+    <div class="toast toast-error">
+      <span class="material-symbols-outlined">error</span>
+      {{ mensajeError() }}
+    </div>
+  }
+
+  <!-- ── Tabla de Materiales ─────────────────────────────────── -->
+  <div class="table-card">
+    @if (cargando()) {
+      <div class="table-loader">
+        <div class="spinner-lg"></div>
+        <p>Cargando catálogo de materiales...</p>
+      </div>
+    } @else if (materialesFiltrados().length === 0) {
+      <div class="table-empty">
+        <span class="material-symbols-outlined empty-icon">assignment_late</span>
+        <p>No se encontraron materiales en el catálogo.</p>
+      </div>
+    } @else {
+      <div class="table-responsive">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Código</th>
+              <th>Descripción</th>
+              <th>Categoría</th>
+              <th>Unidad de Medida</th>
+              <th class="col-center">Stock Actual</th>
+              <th>Estado</th>
+              <th class="col-actions">Kardex</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (m of materialesFiltrados(); track m.id_material) {
+              <tr>
+                <td>
+                  <span class="code-badge">{{ m.cod_materia }}</span>
+                </td>
+                <td>
+                  <strong>{{ m.descripcion }}</strong>
+                </td>
+                <td>{{ m.nombre_categoria }}</td>
+                <td class="text-muted">{{ m.nombre_unidad }}</td>
+                <td class="col-center font-bold" [class.text-danger]="m.stock <= 0" [class.text-success]="m.stock > 0">
+                  {{ m.stock }}
+                </td>
+                <td>
+                  <span class="estado-pill" 
+                    [class.estado-pendiente]="m.estado === 'MINIMO'" 
+                    [class.estado-activa]="m.estado === 'STOCK'"
+                    [class.estado-inactivo]="m.estado === 'AGOTADO'">
+                    {{ formatearEstado(m.estado) }}
+                  </span>
+                </td>
+                <td>
+                  <div class="actions-group">
+                    <button class="btn-icon btn-kardex" title="Ver Historial de Kardex" (click)="verKardex(m.id_material)">
+                      <span class="material-symbols-outlined">analytics</span>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </div>
+
+</div>

@@ -1,0 +1,846 @@
+<div class="print-container">
+  <!-- ── Header Superior ────────────────────────────────────────── -->
+  <div class="detail-header no-print">
+    <div class="header-left">
+      <button class="btn-back" (click)="regresar()">
+        <span class="material-symbols-outlined">arrow_back</span>
+      </button>
+      <div class="header-titles">
+        <div class="title-row">
+          <h1>{{ ot()?.cod_ot }}</h1>
+          <span class="status-badge" [className]="'status-badge ' + getEstadoClass(ot()?.estado)">
+            {{ getEstadoLabel(ot()?.estado) }}
+          </span>
+        </div>
+        <p>Detalle operativo e historial de ejecución de la orden de trabajo</p>
+      </div>
+    </div>
+    
+    <div class="header-actions">
+      <!-- Botones de Exportación -->
+      <button class="btn-ghost-icon" (click)="exportarExcel()" title="Exportar a Excel">
+        <span class="material-symbols-outlined">download_for_offline</span> Exportar Excel
+      </button>
+      <button class="btn-ghost-icon" (click)="exportarPDF()" title="Imprimir / Guardar PDF">
+        <span class="material-symbols-outlined">print</span> Imprimir PDF
+      </button>
+      
+      <!-- Botones de Transición de Estados -->
+      @if (ot()?.estado === 'PENDIENTE') {
+        <button class="btn-danger" (click)="anularTrabajo()" [disabled]="guardando()">Anular</button>
+        <button class="btn-primary" (click)="iniciarTrabajo()" [disabled]="guardando()">
+          <span class="material-symbols-outlined">play_arrow</span> Iniciar Trabajo
+        </button>
+      }
+
+      @if (ot()?.estado === 'ACTIVA') {
+        <button class="btn-warning" (click)="enviarARevision()" [disabled]="guardando()">
+          <span class="material-symbols-outlined">rate_review</span> Enviar a Revisión
+        </button>
+      }
+
+      @if (ot()?.estado === 'EN_REVISION') {
+        <button class="btn-primary" (click)="abrirCierreModal()" [disabled]="guardando()">
+          <span class="material-symbols-outlined">task_alt</span> Cerrar y Aprobar
+        </button>
+      }
+    </div>
+  </div>
+
+  <!-- ── Notificaciones flotantes ────────────────────────────── -->
+  @if (mensajeError()) {
+    <div class="alert alert-danger no-print">
+      <span class="material-symbols-outlined">error</span>
+      <span>{{ mensajeError() }}</span>
+    </div>
+  }
+  @if (mensajeExito()) {
+    <div class="alert alert-success no-print">
+      <span class="material-symbols-outlined">check_circle</span>
+      <span>{{ mensajeExito() }}</span>
+    </div>
+  }
+
+  <!-- ── Contenedor General de Detalle ──────────────────────────── -->
+  @if (cargando()) {
+    <div class="loading-state">
+      <span class="spinner-large"></span>
+      <p>Cargando información de la orden de trabajo...</p>
+    </div>
+  } @else if (ot()) {
+    
+    <!-- ── BLOQUE DE IMPRESIÓN EXCLUSIVO (Oculto en pantalla, visible al imprimir) ── -->
+    <div class="print-only-receipt">
+      <div class="receipt-header">
+        <div class="receipt-company">
+          <h2>MULTICOSAILOR SAC</h2>
+          <p>Área de Operaciones de Mantenimiento</p>
+        </div>
+        <div class="receipt-doc-details">
+          <h3>ORDEN DE TRABAJO</h3>
+          <h2 class="receipt-code">{{ ot()?.cod_ot }}</h2>
+          <span class="receipt-status">ESTADO: {{ getEstadoLabel(ot()?.estado) }}</span>
+        </div>
+      </div>
+      <hr />
+      
+      <!-- Fila de Metadatos -->
+      <div class="receipt-metadata-grid-ot">
+        <div><strong>Tipo de OT:</strong> {{ ot()?.tipo_ot }}</div>
+        <div><strong>Forma Generación:</strong> {{ ot()?.forma_generacion }}</div>
+        <div><strong>Fecha Creación:</strong> {{ formatearFecha(ot()?.fecha_creacion) }}</div>
+        <div><strong>Fecha Cierre:</strong> {{ ot()?.fecha_atencion ? formatearFecha(ot()?.fecha_atencion) : '-' }}</div>
+        <div><strong>Creado Por:</strong> {{ ot()?.creado_por || 'Sistema' }}</div>
+        <div><strong>Horómetro Inicial:</strong> {{ ot()?.horometro_al_momento }} H</div>
+        <div><strong>Horómetro Cierre:</strong> {{ ot()?.horometro_corte ? ot()?.horometro_corte + ' H' : 'En ejecución' }}</div>
+      </div>
+
+      <hr />
+
+      <!-- Datos del Equipo Intervenido -->
+      <h4>EQUIPO INTERVENIDO</h4>
+      <table class="receipt-table-info">
+        <tr>
+          <td><strong>Código Equipo:</strong> {{ ot()?.cod_equipo }}</td>
+          <td><strong>Placa:</strong> {{ ot()?.placa_equipo }}</td>
+        </tr>
+        <tr>
+          <td><strong>Nº Serie:</strong> {{ ot()?.num_serie || 'N/A' }}</td>
+          <td><strong>Flota / Modelo:</strong> {{ ot()?.nombre_flota }} - {{ ot()?.marca }} {{ ot()?.modelo }}</td>
+        </tr>
+      </table>
+
+      @if (ot()?.tipo_ot === 'CORRECTIVA') {
+        <hr />
+        <h4>DETALLES DE LA FALLA</h4>
+        <table class="receipt-table-info">
+          <tr>
+            <td><strong>Hora Intervención:</strong> {{ formatearFecha(ot()?.hora_intervencion) }}</td>
+            <td><strong>Horómetro Falla:</strong> {{ ot()?.horometro_falla }} H</td>
+          </tr>
+          <tr>
+            <td><strong>Sistema:</strong> {{ ot()?.nombre_sistema || 'N/A' }}</td>
+            <td><strong>Subsistema:</strong> {{ ot()?.nombre_subsistema || 'N/A' }}</td>
+          </tr>
+        </table>
+        @if (ot()?.descripcion_falla) {
+          <div class="receipt-notes" style="margin-top: 10px;">
+            <strong>Descripción de la Falla:</strong> {{ ot()?.descripcion_falla }}
+          </div>
+        }
+      }
+
+      @if (ot()?.observaciones) {
+        <hr />
+        <div class="receipt-notes">
+          <strong>Observaciones de Cierre / Trabajo:</strong> {{ ot()?.observaciones }}
+        </div>
+      }
+
+      <!-- Actividades -->
+      <hr />
+      <h4>HOJA DE RUTA (ACTIVIDADES EJECUTADAS)</h4>
+      <table class="receipt-table">
+        <thead>
+          <tr>
+            <th>Actividad</th>
+            <th>Sistema</th>
+            <th>PM Asociado</th>
+            <th>Estado</th>
+            <th>Comentarios Técnicos</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (act of ot()?.actividades; track act.id_ot_actividad) {
+            <tr>
+              <td><strong>{{ act.nombre_actividad }}</strong></td>
+              <td>{{ act.cod_sistema || 'N/A' }}</td>
+              <td>{{ act.tipo_pm || 'General' }}</td>
+              <td>{{ act.estado_ejecucion }}</td>
+              <td>{{ act.observacion_tecnica || '-' }}</td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="5">No se registraron actividades.</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+
+      <!-- Repuestos -->
+      <hr />
+      <h4>REPUESTOS Y MATERIALES REQUERIDOS</h4>
+      <table class="receipt-table">
+        <thead>
+          <tr>
+            <th>Código</th>
+            <th>Descripción</th>
+            <th class="text-right">Cant. Requerida</th>
+            <th class="text-right">Cant. Utilizada</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (mat of ot()?.materiales; track mat.id_ot_material) {
+            <tr>
+              <td>{{ mat.cod_materia || '-' }}</td>
+              <td>{{ mat.descripcion_material }}</td>
+              <td class="text-right">{{ mat.cantidad_requerida }}</td>
+              <td class="text-right">{{ mat.cantidad_utilizada !== null ? mat.cantidad_utilizada : '-' }}</td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="4">No se requirieron repuestos o materiales.</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+
+      <!-- Personal -->
+      <hr />
+      <h4>PERSONAL TÉCNICO ASIGNADO</h4>
+      <table class="receipt-table">
+        <thead>
+          <tr>
+            <th>DNI</th>
+            <th>Nombre Técnico</th>
+            <th>Rol</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (per of ot()?.personal; track per.id_ot_personal) {
+            <tr>
+              <td>{{ per.dni_empleado }}</td>
+              <td><strong>{{ per.nombre_empleado }}</strong></td>
+              <td>{{ per.rol || 'Técnico' }}</td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="3">Sin personal asignado.</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+
+      <!-- Firmas -->
+      <div class="receipt-signatures">
+        <div class="signature-line">
+          <div class="line"></div>
+          <span>Firma del Supervisor</span>
+        </div>
+        <div class="signature-line">
+          <div class="line"></div>
+          <span>Firma del Técnico</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="detail-container screen-content">
+      
+      <!-- ── Fila 1: Resumen General e Información del Equipo ── -->
+      <div class="summary-grid">
+        <!-- Info del Equipo -->
+        <div class="info-card">
+          <div class="info-card-header">
+            <span class="material-symbols-outlined font-orange">local_shipping</span>
+            <h3>Equipo Intervenido</h3>
+          </div>
+          <div class="info-card-body">
+            <div class="data-row">
+              <span class="data-label">Código del Equipo:</span>
+              <span class="data-value highlight">{{ ot()?.cod_equipo }}</span>
+            </div>
+            <div class="data-row">
+              <span class="data-label">Placa:</span>
+              <span class="data-value">{{ ot()?.placa_equipo }}</span>
+            </div>
+            <div class="data-row">
+              <span class="data-label">Número de Serie:</span>
+              <span class="data-value">{{ ot()?.num_serie || 'N/A' }}</span>
+            </div>
+            <div class="data-row">
+              <span class="data-label">Flota / Modelo:</span>
+              <span class="data-value">{{ ot()?.nombre_flota }} - {{ ot()?.marca }} {{ ot()?.modelo }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Info de la OT -->
+        <div class="info-card">
+          <div class="info-card-header">
+            <span class="material-symbols-outlined font-orange">info</span>
+            <h3>Datos de la Orden</h3>
+          </div>
+          <div class="info-card-body">
+            <div class="data-row">
+              <span class="data-label">Tipo de Orden:</span>
+              <span class="data-value font-bold">{{ ot()?.tipo_ot }}</span>
+            </div>
+            <div class="data-row">
+              <span class="data-label">Forma de Generación:</span>
+              <span class="data-value">{{ ot()?.forma_generacion }}</span>
+            </div>
+            <div class="data-row">
+              <span class="data-label">Horómetro Inicial:</span>
+              <span class="data-value">{{ ot()?.horometro_al_momento }} H</span>
+            </div>
+            <div class="data-row">
+              <span class="data-label">Horómetro de Cierre:</span>
+              <span class="data-value font-bold text-success">{{ ot()?.horometro_corte ? ot()?.horometro_corte + ' H' : 'En ejecución' }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Fechas y Auditoría -->
+        <div class="info-card">
+          <div class="info-card-header">
+            <span class="material-symbols-outlined font-orange">calendar_today</span>
+            <h3>Tiempos y Responsable</h3>
+          </div>
+          <div class="info-card-body">
+            <div class="data-row">
+              <span class="data-label">Fecha Creación:</span>
+              <span class="data-value">{{ formatearFecha(ot()?.fecha_creacion) }}</span>
+            </div>
+            <div class="data-row">
+              <span class="data-label">Fecha Cierre:</span>
+              <span class="data-value">{{ ot()?.fecha_atencion ? formatearFecha(ot()?.fecha_atencion) : '-' }}</span>
+            </div>
+            <div class="data-row">
+              <span class="data-label">Creado Por:</span>
+              <span class="data-value">{{ ot()?.creado_por || 'Sistema (Automático)' }}</span>
+            </div>
+            <div class="data-row">
+              <span class="data-label">PMs Incluidos:</span>
+              <span class="data-value">
+                @for (pm of ot()?.pms_incluidos; track pm.id_detalle_estrg) {
+                  <span class="pm-tag">{{ pm.tipo_pm }}</span>
+                } @empty {
+                  <span class="text-muted">Ninguno (Correctiva)</span>
+                }
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Info Correctiva -->
+        @if (ot()?.tipo_ot === 'CORRECTIVA') {
+          <div class="info-card">
+            <div class="info-card-header">
+              <span class="material-symbols-outlined font-orange">report_problem</span>
+              <h3>Detalles de la Falla</h3>
+            </div>
+            <div class="info-card-body">
+              <div class="data-row">
+                <span class="data-label">Hora Intervención:</span>
+                <span class="data-value highlight">{{ formatearFecha(ot()?.hora_intervencion) }}</span>
+              </div>
+              <div class="data-row">
+                <span class="data-label">Horómetro Falla:</span>
+                <span class="data-value font-bold">{{ ot()?.horometro_falla }} H</span>
+              </div>
+              <div class="data-row">
+                <span class="data-label">Sistema:</span>
+                <span class="data-value">{{ ot()?.nombre_sistema || 'N/A' }}</span>
+              </div>
+              <div class="data-row">
+                <span class="data-label">Subsistema:</span>
+                <span class="data-value">{{ ot()?.nombre_subsistema || 'N/A' }}</span>
+              </div>
+            </div>
+          </div>
+        }
+      </div>
+
+      <!-- Descripción de la Falla (Correctiva) -->
+      @if (ot()?.tipo_ot === 'CORRECTIVA' && ot()?.descripcion_falla) {
+        <div class="observations-box alert-box-warning" style="background: #fff5f5; border: 1px solid #feb2b2; color: #9b2c2c;">
+          <h4><span class="material-symbols-outlined" style="color: #e53e3e;">warning</span> Descripción de la Falla / Trabajo a Realizar</h4>
+          <p style="color: #2d3748;">{{ ot()?.descripcion_falla }}</p>
+        </div>
+      }
+
+      <!-- Observaciones / Comentarios -->
+      @if (ot()?.observaciones) {
+        <div class="observations-box">
+          <h4><span class="material-symbols-outlined">notes</span> Comentarios / Observaciones</h4>
+          <p>{{ ot()?.observaciones }}</p>
+        </div>
+      }
+
+      <!-- ── Fila 2: Hoja de Ruta (Actividades) ─────────────────────── -->
+      <div class="section-card">
+        <div class="section-card-header header-with-action">
+          <div class="header-title-left">
+            <span class="material-symbols-outlined">format_list_bulleted</span>
+            <h3>Hoja de Ruta (Actividades Ejecutadas)</h3>
+          </div>
+          @if (esEditable()) {
+            <button class="btn-primary-sm btn-icon-text" (click)="abrirAddActividadModal()">
+              <span class="material-symbols-outlined">add</span> Agregar Actividad Extra
+            </button>
+          }
+        </div>
+        <div class="section-card-body">
+          <table class="detail-table">
+            <thead>
+              <tr>
+                <th>Actividad</th>
+                <th>Sistema</th>
+                <th>PM Asociado</th>
+                <th style="width: 140px">Estado</th>
+                <th>Comentarios Técnicos</th>
+                @if (esEditable()) {
+                  <th style="width: 80px; text-align: center;">Acciones</th>
+                }
+              </tr>
+            </thead>
+            <tbody>
+              @for (act of ot()?.actividades; track act.id_ot_actividad) {
+                <tr>
+                  <td><strong>{{ act.nombre_actividad }}</strong></td>
+                  <td><span class="system-chip">{{ act.cod_sistema || 'N/A' }}</span></td>
+                  <td>{{ act.tipo_pm || 'General' }}</td>
+                  <td>
+                    <span class="badge" [class.badge-success]="act.estado_ejecucion === 'COMPLETADA'" [class.badge-warning]="act.estado_ejecucion === 'PENDIENTE'">
+                      {{ act.estado_ejecucion === 'COMPLETADA' ? 'Completada' : 'Pendiente' }}
+                    </span>
+                  </td>
+                  <td><span class="text-muted-sm">{{ act.observacion_tecnica || '-' }}</span></td>
+                  @if (esEditable()) {
+                    <td class="text-center">
+                      <button class="btn-delete-row" (click)="removerActividad(act.id_ot_actividad)" title="Eliminar actividad">
+                        <span class="material-symbols-outlined">delete</span>
+                      </button>
+                    </td>
+                  }
+                </tr>
+              } @empty {
+                <tr>
+                  <td [attr.colspan]="esEditable() ? 6 : 5" class="text-center py-4">No se definieron actividades para esta orden de trabajo.</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ── Fila 3: Repuestos y Personal ───────────────────────────── -->
+      <div class="columns-grid">
+        <!-- Repuestos y Materiales -->
+        <div class="section-card">
+          <div class="section-card-header header-with-action">
+            <div class="header-title-left">
+              <span class="material-symbols-outlined">inventory_2</span>
+              <h3>Repuestos y Materiales Requeridos</h3>
+            </div>
+            @if (esEditable()) {
+              <button class="btn-primary-sm btn-icon-text" (click)="abrirAddMaterialModal()">
+                <span class="material-symbols-outlined">add</span> Agregar Material Extra
+              </button>
+            }
+          </div>
+          <div class="section-card-body">
+            <table class="detail-table">
+              <thead>
+                <tr>
+                  <th>Código</th>
+                  <th>Descripción</th>
+                  <th>Cant. Req.</th>
+                  <th>Cant. Util.</th>
+                  @if (esEditable()) {
+                    <th style="width: 80px; text-align: center;">Acciones</th>
+                  }
+                </tr>
+              </thead>
+              <tbody>
+                @for (mat of ot()?.materiales; track mat.id_ot_material) {
+                  <tr>
+                    <td>{{ mat.cod_materia || '-' }}</td>
+                    <td><strong>{{ mat.descripcion_material }}</strong></td>
+                    <td class="text-center">{{ mat.cantidad_requerida }}</td>
+                    <td class="text-center font-bold" [class.text-success]="mat.cantidad_utilizada !== null">
+                      {{ mat.cantidad_utilizada !== null ? mat.cantidad_utilizada : '-' }}
+                    </td>
+                    @if (esEditable()) {
+                      <td class="text-center">
+                        <button class="btn-delete-row" (click)="removerMaterial(mat.id_ot_material)" title="Eliminar material">
+                          <span class="material-symbols-outlined">delete</span>
+                        </button>
+                      </td>
+                    }
+                  </tr>
+                } @empty {
+                  <tr>
+                    <td [attr.colspan]="esEditable() ? 5 : 4" class="text-center py-4">No se requirieron materiales o repuestos.</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Personal Asignado -->
+        <div class="section-card">
+          <div class="section-card-header header-with-action">
+            <div class="header-title-left">
+              <span class="material-symbols-outlined">engineering</span>
+              <h3>Personal Técnico Asignado</h3>
+            </div>
+            @if (esEditable()) {
+              <button class="btn-primary-sm btn-icon-text" (click)="abrirAddPersonalModal()">
+                <span class="material-symbols-outlined">add</span> Asignar Técnico
+              </button>
+            }
+          </div>
+          <div class="section-card-body">
+            <div class="personal-grid">
+              @for (per of ot()?.personal; track per.id_ot_personal) {
+                <div class="personal-card">
+                  <div class="avatar-small">
+                    <span class="material-symbols-outlined">person</span>
+                  </div>
+                  <div class="personal-info">
+                    <h4>{{ per.nombre_empleado }}</h4>
+                    <p>DNI: {{ per.dni_empleado }} | Rol: <strong>{{ per.rol || 'Técnico' }}</strong></p>
+                  </div>
+                  @if (esEditable()) {
+                    <button class="btn-delete-personal" (click)="removerPersonal(per.id_ot_personal)" title="Retirar técnico">
+                      <span class="material-symbols-outlined">close</span>
+                    </button>
+                  }
+                </div>
+              } @empty {
+                <div class="empty-list-state">
+                  <span class="material-symbols-outlined">group_off</span>
+                  <p>Sin personal asignado a esta orden de trabajo.</p>
+                </div>
+              }
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  }
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════
+     MODAL DE CIERRE TÉCNICO Y APROBACIÓN
+     ══════════════════════════════════════════════════════════════ -->
+@if (showCierreModal()) {
+  <div class="modal-backdrop no-print" (click)="cerrarCierreModal()">
+    <div class="modal-card modal-lg" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <div class="modal-title-group">
+          <span class="material-symbols-outlined modal-icon font-orange">task_alt</span>
+          <h2 class="modal-title">Cierre Técnico e Informe de Trabajos</h2>
+        </div>
+        <button class="modal-close" (click)="cerrarCierreModal()">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+
+      <div class="modal-body modal-split-cierre">
+        <!-- Columna Izquierda: Datos e Informe -->
+        <div class="cierre-left-side">
+          @if (ot()?.tipo_ot === 'CORRECTIVA') {
+            <div class="input-group">
+              <label for="hora_intervencion_cierre">Hora de Inicio de Intervención *</label>
+              <input type="datetime-local" id="hora_intervencion_cierre" [ngModel]="horaIntervencionCierre()" (ngModelChange)="horaIntervencionCierre.set($event)"
+                     class="picker-input-cierre" />
+            </div>
+          }
+
+          <div class="input-group mt-4">
+            <label for="horometro_cierre">Horómetro Final al Cerrar (H) *</label>
+            <input type="number" id="horometro_cierre" [ngModel]="horometroCierre()" (ngModelChange)="horometroCierre.set($event)"
+                   class="picker-input-cierre" placeholder="Ej: 305" />
+            <span class="helper-text-sm">Horómetro inicial: {{ ot()?.horometro_al_momento }} H. El de cierre debe ser igual o mayor.</span>
+          </div>
+
+          <div class="input-group mt-4">
+            <label for="obs_cierre">Observaciones del Cierre / Informe Técnico</label>
+            <textarea id="obs_cierre" [ngModel]="observacionesCierre()" (ngModelChange)="observacionesCierre.set($event)"
+                      placeholder="Ingrese los comentarios del técnico sobre los trabajos realizados..." rows="4"></textarea>
+          </div>
+
+          <!-- Tabla de Actividades para marcar completado -->
+          <div class="cierre-section-title mt-4">
+            <h4>Actividades Realizadas</h4>
+          </div>
+          <div class="activities-check-list">
+            @for (act of ot()?.actividades; track act.id_ot_actividad) {
+              <div class="activity-check-row" (click)="toggleActividadCierre(act.id_ot_actividad)">
+                <span class="material-symbols-outlined font-orange">
+                  {{ actividadesCompletadas().has(act.id_ot_actividad) ? 'check_box' : 'check_box_outline_blank' }}
+                </span>
+                <span class="activity-name" [class.completed]="actividadesCompletadas().has(act.id_ot_actividad)">
+                  {{ act.nombre_actividad }}
+                </span>
+              </div>
+            }
+          </div>
+        </div>
+
+        <!-- Columna Derecha: Cantidades de Materiales Utilizados -->
+        <div class="cierre-right-side">
+          <div class="cierre-section-title">
+            <h4>Repuestos Utilizados (Cantidades Reales)</h4>
+          </div>
+
+          <div class="materials-cierre-list">
+            @for (mat of ot()?.materiales; track mat.id_ot_material) {
+              <div class="material-cierre-row">
+                <div class="mat-info">
+                  <strong>{{ mat.descripcion_material }}</strong>
+                  <span>Requerido: {{ mat.cantidad_requerida }} und</span>
+                </div>
+                <div class="mat-input-box">
+                  <input type="number" [ngModel]="materialesCierre().get(mat.id_ot_material)"
+                         (ngModelChange)="actualizarMaterialCantidadCierre(mat.id_ot_material, $event)"
+                         class="mini-input-cierre" min="0" />
+                  <span>und</span>
+                </div>
+              </div>
+            } @empty {
+              <p class="text-muted-sm text-center py-6">No se registraron materiales para esta orden de trabajo.</p>
+            }
+          </div>
+
+          <!-- Acciones de Cierre -->
+          <div class="cierre-actions">
+            <button class="btn-secondary w-full" (click)="cerrarCierreModal()">Cancelar</button>
+            <button class="btn-primary w-full mt-2" (click)="procesarCierre()" [disabled]="guardando()">
+              @if (guardando()) {
+                <span class="spinner"></span> Procesando Cierre...
+              } @else {
+                <span class="material-symbols-outlined">verified</span> Confirmar y Cerrar OT
+              }
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- ══════════════════════════════════════════════════════════════
+     MODAL PARA AGREGAR ACTIVIDAD EXTRA
+     ══════════════════════════════════════════════════════════════ -->
+@if (showAddActividadModal()) {
+  <div class="modal-backdrop no-print" (click)="cerrarAddActividadModal()">
+    <div class="modal-card modal-md" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <div class="modal-title-group">
+          <span class="material-symbols-outlined modal-icon font-orange">format_list_bulleted_add</span>
+          <h2 class="modal-title">Agregar Actividad Extra</h2>
+        </div>
+        <button class="modal-close" (click)="cerrarAddActividadModal()">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+
+      <div class="modal-body">
+        <div class="input-group">
+          <label for="act_nombre">Nombre de la Actividad *</label>
+          <input type="text" id="act_nombre" [ngModel]="nuevaActividadNombre()" (ngModelChange)="nuevaActividadNombre.set($event)"
+                 class="form-control-input" placeholder="Ej: Inspección visual de pernos de rueda" />
+        </div>
+
+        <div class="input-group mt-4">
+          <label for="act_sistema">Código de Sistema (Opcional)</label>
+          <input type="text" id="act_sistema" [ngModel]="nuevaActividadSistema()" (ngModelChange)="nuevaActividadSistema.set($event)"
+                 class="form-control-input" placeholder="Ej: SIST-02, MOTOR, etc." />
+        </div>
+
+        <div class="input-group mt-4">
+          <label for="act_tipo_pm">Tipo PM (Opcional)</label>
+          <input type="text" id="act_tipo_pm" [ngModel]="nuevaActividadTipoPm()" (ngModelChange)="nuevaActividadTipoPm.set($event)"
+                 class="form-control-input" placeholder="Ej: PM1, General, etc." />
+        </div>
+
+        <div class="modal-actions-footer mt-6">
+          <button class="btn-secondary" (click)="cerrarAddActividadModal()">Cancelar</button>
+          <button class="btn-primary" (click)="agregarActividad()" [disabled]="guardando() || !nuevaActividadNombre().trim()">
+            @if (guardando()) {
+              <span class="spinner"></span> Guardando...
+            } @else {
+              <span class="material-symbols-outlined">save</span> Guardar Actividad
+            }
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- ══════════════════════════════════════════════════════════════
+     MODAL PARA AGREGAR MATERIAL EXTRA (Búsqueda de Catálogo)
+     ══════════════════════════════════════════════════════════════ -->
+@if (showAddMaterialModal()) {
+  <div class="modal-backdrop no-print" (click)="cerrarAddMaterialModal()">
+    <div class="modal-card modal-lg" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <div class="modal-title-group">
+          <span class="material-symbols-outlined modal-icon font-orange">inventory</span>
+          <h2 class="modal-title">Agregar Repuesto / Material Extra</h2>
+        </div>
+        <button class="modal-close" (click)="cerrarAddMaterialModal()">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+
+      <div class="modal-body modal-split-catalog">
+        <!-- Columna Izquierda: Buscador y Lista de Selección -->
+        <div class="catalog-left-side">
+          <div class="search-box-catalog">
+            <span class="material-symbols-outlined search-icon">search</span>
+            <input type="text" [ngModel]="busquedaMaterialCatalog()" (ngModelChange)="busquedaMaterialCatalog.set($event)"
+                   placeholder="Buscar por código o descripción..." class="catalog-search-input" />
+          </div>
+
+          <div class="catalog-items-list">
+            @for (mat of materialesCatalogFiltrados(); track mat.id_material) {
+              <div class="catalog-item-row" [class.selected]="nuevoMaterialId() === mat.id_material"
+                   (click)="seleccionarMaterialDelCatalogo(mat)">
+                <div class="catalog-item-info">
+                  <span class="catalog-item-code">{{ mat.cod_materia || 'SIN COD' }}</span>
+                  <strong class="catalog-item-desc">{{ mat.descripcion }}</strong>
+                </div>
+                @if (nuevoMaterialId() === mat.id_material) {
+                  <span class="material-symbols-outlined font-orange selected-check">check_circle</span>
+                }
+              </div>
+            } @empty {
+              <p class="text-muted-sm text-center py-6">No se encontraron materiales que coincidan con la búsqueda.</p>
+            }
+          </div>
+        </div>
+
+        <!-- Columna Derecha: Configuración de Cantidad y Confirmación -->
+        <div class="catalog-right-side">
+          <div class="selected-preview-card">
+            <h4>Material Seleccionado</h4>
+            @if (materialSeleccionado()) {
+              <div class="selected-details">
+                <p class="sel-code">{{ materialSeleccionado()?.cod_materia }}</p>
+                <p class="sel-desc">{{ materialSeleccionado()?.descripcion }}</p>
+              </div>
+            } @else {
+              <p class="no-selection-alert">Por favor, seleccione un repuesto de la lista de la izquierda.</p>
+            }
+          </div>
+
+          <div class="input-group mt-4">
+            <label for="mat_cantidad">Cantidad Requerida *</label>
+            <div class="quantity-input-wrapper">
+              <input type="number" id="mat_cantidad" [ngModel]="nuevoMaterialCantidad()" (ngModelChange)="nuevoMaterialCantidad.set($event)"
+                     class="picker-input-cierre" min="1" placeholder="Ej: 2" />
+              <span class="unit-label">und</span>
+            </div>
+          </div>
+
+          <div class="catalog-actions mt-auto">
+            <button class="btn-secondary w-full" (click)="cerrarAddMaterialModal()">Cancelar</button>
+            <button class="btn-primary w-full mt-2" (click)="agregarMaterial()"
+                    [disabled]="guardando() || !nuevoMaterialId() || nuevoMaterialCantidad() <= 0">
+              @if (guardando()) {
+                <span class="spinner"></span> Agregando...
+              } @else {
+                <span class="material-symbols-outlined">add_shopping_cart</span> Agregar a la Orden
+              }
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- ══════════════════════════════════════════════════════════════
+     MODAL PARA ASIGNAR PERSONAL TÉCNICO
+     ══════════════════════════════════════════════════════════════ -->
+@if (showAddPersonalModal()) {
+  <div class="modal-backdrop no-print" (click)="cerrarAddPersonalModal()">
+    <div class="modal-card modal-lg" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <div class="modal-title-group">
+          <span class="material-symbols-outlined modal-icon font-orange">group_add</span>
+          <h2 class="modal-title">Asignar Personal Técnico</h2>
+        </div>
+        <button class="modal-close" (click)="cerrarAddPersonalModal()">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+
+      <div class="modal-body modal-split-catalog">
+        <!-- Columna Izquierda: Buscador y Lista de Selección -->
+        <div class="catalog-left-side">
+          <div class="search-box-catalog">
+            <span class="material-symbols-outlined search-icon">search</span>
+            <input type="text" [ngModel]="busquedaPersonalCatalog()" (ngModelChange)="busquedaPersonalCatalog.set($event)"
+                   placeholder="Buscar por DNI, nombre o especialidad..." class="catalog-search-input" />
+          </div>
+
+          <div class="catalog-items-list">
+            @for (emp of empleadosCatalogFiltrados(); track emp.dni_empleado) {
+              <div class="catalog-item-row" 
+                   [class.selected]="nuevoPersonalDni() === emp.dni_empleado"
+                   [class.disabled]="!emp.disponible"
+                   [title]="!emp.disponible ? emp.motivo_no_disponible : ''"
+                   (click)="seleccionarPersonalDelCatalogo(emp)">
+                <div class="catalog-item-info">
+                  <span class="catalog-item-code">{{ emp.dni_empleado }} - {{ emp.nombreRol }}</span>
+                  <strong class="catalog-item-desc">{{ emp.nombre }} {{ emp.apellido1 }} {{ emp.apellido2 || '' }}</strong>
+                  @if (!emp.disponible) {
+                    <span class="not-available-badge">
+                      <span class="material-symbols-outlined icon-small">warning</span> {{ emp.motivo_no_disponible }} ({{ emp.ots_hoy }} OTs)
+                    </span>
+                  } @else {
+                    <span class="available-badge">
+                      Disponible ({{ emp.ots_hoy }} OTs hoy)
+                    </span>
+                  }
+                </div>
+                @if (nuevoPersonalDni() === emp.dni_empleado) {
+                  <span class="material-symbols-outlined font-orange selected-check">check_circle</span>
+                }
+              </div>
+            } @empty {
+              <p class="text-muted-sm text-center py-6">No se encontraron técnicos activos que coincidan con la búsqueda.</p>
+            }
+          </div>
+        </div>
+
+        <!-- Columna Derecha: Detalles del Técnico Seleccionado y Confirmación -->
+        <div class="catalog-right-side">
+          <div class="selected-preview-card">
+            <h4>Técnico Seleccionado</h4>
+            @if (empleadoSeleccionado()) {
+              <div class="selected-details">
+                <p class="sel-code">DNI: {{ empleadoSeleccionado()?.dni_empleado }}</p>
+                <p class="sel-desc">{{ empleadoSeleccionado()?.nombre }} {{ empleadoSeleccionado()?.apellido1 }}</p>
+                <p class="sel-role">Especialidad: <strong>{{ empleadoSeleccionado()?.nombreRol }}</strong></p>
+              </div>
+            } @else {
+              <p class="no-selection-alert">Por favor, seleccione un técnico de la lista de la izquierda.</p>
+            }
+          </div>
+
+          <div class="catalog-actions mt-auto">
+            <button class="btn-secondary w-full" (click)="cerrarAddPersonalModal()">Cancelar</button>
+            <button class="btn-primary w-full mt-2" (click)="agregarPersonal()"
+                    [disabled]="guardando() || !nuevoPersonalDni()">
+              @if (guardando()) {
+                <span class="spinner"></span> Asignando...
+              } @else {
+                <span class="material-symbols-outlined">person_add</span> Asignar Técnico
+              }
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+}
+

@@ -1,0 +1,379 @@
+<div class="page-wrapper mantenimiento-theme">
+
+  <!-- ── Header ─────────────────────────────────────────────── -->
+  <div class="page-header">
+    <div class="page-title-group">
+      <span class="material-symbols-outlined page-icon">calendar_month</span>
+      <div>
+        <h1 class="page-title">Calendario de Mantenimiento Preventivo</h1>
+        <p class="page-subtitle">Proyección de mantenimientos rutinarios programados según la estrategia de cada equipo</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Barra de Filtros y Navegación ───────────────────────── -->
+  <div class="control-panel">
+    <!-- Fila 1: Filtros de Selección -->
+    <div class="filter-row">
+      <!-- Buscador -->
+      <div class="input-search-wrapper">
+        <span class="material-symbols-outlined search-icon">search</span>
+        <input
+          type="text"
+          placeholder="Buscar por equipo, PM o actividad..."
+          class="search-field"
+          [ngModel]="busquedaTexto()"
+          (ngModelChange)="busquedaTexto.set($event)"
+        />
+        @if (busquedaTexto()) {
+          <button class="clear-search-btn" (click)="busquedaTexto.set('')">
+            <span class="material-symbols-outlined">close</span>
+          </button>
+        }
+      </div>
+
+      <!-- Filtro Equipo -->
+      <div class="select-wrapper">
+        <select
+          class="filter-select"
+          [ngModel]="filtroEquipo()"
+          (ngModelChange)="filtroEquipo.set($event)"
+        >
+          <option value="">-- Todos los Equipos --</option>
+          @for (eq of equiposUnicos(); track eq.code) {
+            <option [value]="eq.code">{{ eq.code }} - {{ eq.name }}</option>
+          }
+        </select>
+      </div>
+
+      <!-- Filtro Tipo PM -->
+      <div class="select-wrapper">
+        <select
+          class="filter-select"
+          [ngModel]="filtroPmType()"
+          (ngModelChange)="filtroPmType.set($event)"
+        >
+          <option value="">-- Todos los PM --</option>
+          <option value="PM 1">PM 1</option>
+          <option value="PM 2">PM 2</option>
+          <option value="PM 3">PM 3</option>
+          <option value="PM 4">PM 4</option>
+        </select>
+      </div>
+
+      <!-- Filtro Unidad de Medida -->
+      <div class="select-wrapper">
+        <select
+          class="filter-select"
+          [ngModel]="filtroUniMed()"
+          (ngModelChange)="filtroUniMed.set($event)"
+        >
+          <option value="">-- Todas las Frecuencias --</option>
+          <option value="DIAS">Días (Calendario)</option>
+          <option value="MESES">Meses (Calendario)</option>
+          <option value="SEMANAS">Semanas (Calendario)</option>
+          <option value="HORAS">Horas (Estimación)</option>
+          <option value="KM">Kilómetros (Estimación)</option>
+        </select>
+      </div>
+
+      <!-- Botón Limpiar -->
+      @if (filtroEquipo() || filtroPmType() || filtroUniMed() || busquedaTexto()) {
+        <button class="btn-clear-filters" (click)="limpiarFiltros()" title="Limpiar todos los filtros">
+          <span class="material-symbols-outlined">filter_alt_off</span>
+          Limpiar
+        </button>
+      }
+    </div>
+
+    <!-- Fila 2: Controles de Periodo y Vistas -->
+    <div class="navigation-row">
+      <!-- Navegación de Fecha -->
+      <div class="date-navigator">
+        <button class="nav-btn" (click)="irAnterior()" title="Anterior">
+          <span class="material-symbols-outlined">chevron_left</span>
+        </button>
+        <button class="today-btn" (click)="irHoy()">Hoy</button>
+        <button class="nav-btn" (click)="irSiguiente()" title="Siguiente">
+          <span class="material-symbols-outlined">chevron_right</span>
+        </button>
+        <span class="period-title">{{ getTituloPeriodo() }}</span>
+      </div>
+
+      <!-- Proyección Indicador de Unidades de Trabajo -->
+      @if (filtroUniMed() === 'HORAS' || filtroUniMed() === 'KM') {
+        <div class="projection-legend">
+          <span class="material-symbols-outlined legend-icon">info</span>
+          <span>Proyección estimada: 8 hrs/día o 100 km/día</span>
+        </div>
+      }
+
+      <!-- Selectores de Vista -->
+      <div class="view-selector">
+        <button
+          class="view-btn"
+          [class.active]="vistaActiva() === 'MES'"
+          (click)="setVista('MES')"
+        >
+          Mes
+        </button>
+        <button
+          class="view-btn"
+          [class.active]="vistaActiva() === 'SEMANA'"
+          (click)="setVista('SEMANA')"
+        >
+          Semana
+        </button>
+        <button
+          class="view-btn"
+          [class.active]="vistaActiva() === 'ANO'"
+          (click)="setVista('ANO')"
+        >
+          Año
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Contenido de Carga ──────────────────────────────────── -->
+  @if (cargando()) {
+    <div class="calendar-loader">
+      <div class="spinner-lg"></div>
+      <p>Proyectando calendario de mantenimientos preventivos...</p>
+    </div>
+  } @else {
+
+    <!-- ── VISTA MENSUAL (Grid del Mes) ───────────────────────── -->
+    @if (vistaActiva() === 'MES') {
+      <div class="calendar-card">
+        <!-- Días de la semana -->
+        <div class="calendar-week-headers">
+          @for (dia of nombreDias; track dia) {
+            <div class="week-header-cell">{{ dia }}</div>
+          }
+        </div>
+
+        <!-- Celdas de días -->
+        <div class="calendar-grid">
+          @for (c of diasCalendario(); track $index) {
+            <div
+              class="calendar-day-cell"
+              [class.day-outside]="c.fueraDeMes"
+              [class.day-today]="c.esHoy"
+            >
+              <div class="day-header">
+                <span class="day-number">{{ c.diaStr }}</span>
+              </div>
+              
+              <div class="day-events-wrapper">
+                @for (ev of c.eventos; track ev.id) {
+                  <div
+                    class="event-badge"
+                    [class.pm1]="ev.tipoPm === 'PM 1'"
+                    [class.pm2]="ev.tipoPm === 'PM 2'"
+                    [class.pm3]="ev.tipoPm === 'PM 3'"
+                    [class.pm4]="ev.tipoPm === 'PM 4'"
+                    [title]="ev.cod_equipo + ' - ' + ev.tipoPm"
+                    (click)="abrirModal(ev); $event.stopPropagation()"
+                  >
+                    <span class="event-eq">{{ ev.cod_equipo }}</span>
+                    <span class="event-pm">{{ ev.tipoPm }}</span>
+                  </div>
+                }
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+    }
+
+    <!-- ── VISTA SEMANAL (Columnas de Días) ────────────────────── -->
+    @if (vistaActiva() === 'SEMANA') {
+      <div class="week-layout">
+        @for (day of semanaDias(); track day.fechaStr) {
+          <div class="week-column" [class.week-today]="day.esHoy">
+            <div class="week-column-header">
+              <span class="week-day-name">{{ day.diaNombre }}</span>
+              <span class="week-day-number">{{ day.diaNumero }}</span>
+            </div>
+
+            <div class="week-column-body">
+              @if (day.eventos.length === 0) {
+                <div class="empty-column-msg">Sin eventos</div>
+              } @else {
+                @for (ev of day.eventos; track ev.id) {
+                  <div
+                    class="week-event-card"
+                    [class.pm1]="ev.tipoPm === 'PM 1'"
+                    [class.pm2]="ev.tipoPm === 'PM 2'"
+                    [class.pm3]="ev.tipoPm === 'PM 3'"
+                    [class.pm4]="ev.tipoPm === 'PM 4'"
+                    (click)="abrirModal(ev)"
+                  >
+                    <div class="week-card-header">
+                      <span class="week-card-eq">{{ ev.cod_equipo }}</span>
+                      <span class="week-card-pm">{{ ev.tipoPm }}</span>
+                    </div>
+                    <div class="week-card-body">
+                      <p class="week-card-title">{{ ev.nombre_equipo }}</p>
+                      <span class="week-card-meta">
+                        {{ ev.actividades.length }} act. | Frec. {{ ev.umbral }} {{ ev.uniMed }}
+                      </span>
+                    </div>
+                  </div>
+                }
+              }
+            </div>
+          </div>
+        }
+      </div>
+    }
+
+    <!-- ── VISTA ANUAL (Meses Resumen) ────────────────────────── -->
+    @if (vistaActiva() === 'ANO') {
+      <div class="year-grid">
+        @for (mes of nombreMeses; track $index) {
+          <div
+            class="year-month-card"
+            (click)="seleccionarMesDesdeAno($index)"
+          >
+            <div class="year-month-header">
+              <h3>{{ mes }}</h3>
+              <span class="badge-count-year" [class.has-events]="getFrecuenciaMensual($index) > 0">
+                {{ getFrecuenciaMensual($index) }} mant.
+              </span>
+            </div>
+            <div class="year-month-body">
+              @if (getFrecuenciaMensual($index) === 0) {
+                <p class="no-events-year">No hay mantenimientos</p>
+              } @else {
+                <div class="year-equipments-list">
+                  <!-- Group uniquely listed equipments -->
+                  @for (ev of eventosFiltrados(); track ev.id) {
+                    @if (ev.fecha.getFullYear() === fechaReferencia().getFullYear() && ev.fecha.getMonth() === $index) {
+                      <div class="year-eq-pill" [class.pm1]="ev.tipoPm === 'PM 1'" [class.pm2]="ev.tipoPm === 'PM 2'" [class.pm3]="ev.tipoPm === 'PM 3'" [class.pm4]="ev.tipoPm === 'PM 4'">
+                        {{ ev.cod_equipo }}: {{ ev.tipoPm }}
+                      </div>
+                    }
+                  }
+                </div>
+              }
+            </div>
+          </div>
+        }
+      </div>
+    }
+
+  }
+
+  <!-- ── MODAL: Detalles de Mantenimiento Proyectado ────────── -->
+  @if (modalAbierto() && eventoSeleccionado()) {
+    <div class="modal-backdrop" (click)="cerrarModal()">
+      <div class="modal-dialog" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <div class="modal-title-group">
+            <span class="material-symbols-outlined modal-icon">engineering</span>
+            <div>
+              <h3>Programa Preventivo: {{ eventoSeleccionado()?.tipoPm }}</h3>
+              <p class="modal-subtitle">Proyección estimada de servicio recurrente</p>
+            </div>
+          </div>
+          <button class="btn-close" (click)="cerrarModal()">
+            <span class="material-symbols-outlined">close</span>
+          </button>
+        </div>
+
+        <div class="modal-body">
+          <!-- Información General del Equipo -->
+          <div class="info-block">
+            <div class="info-item">
+              <span class="info-label">Equipo</span>
+              <span class="info-val font-semibold">{{ eventoSeleccionado()?.cod_equipo }} - {{ eventoSeleccionado()?.nombre_equipo }}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Estrategia Aplicada</span>
+              <span class="info-val">{{ eventoSeleccionado()?.estrategia?.titulo_estrategia }}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Fecha Programada</span>
+              <span class="info-val text-orange font-bold">
+                {{ formatearFechaLarga(eventoSeleccionado()?.fecha) }}
+              </span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Frecuencia Definida</span>
+              <span class="info-val">Cada {{ eventoSeleccionado()?.umbral }} {{ eventoSeleccionado()?.uniMed }}</span>
+            </div>
+          </div>
+
+          <!-- Actividades (Hoja de Ruta) -->
+          <div class="section-title-modal">
+            <span class="material-symbols-outlined">list_alt</span>
+            <h4>Actividades Programadas ({{ eventoSeleccionado()?.actividades?.length }})</h4>
+          </div>
+
+          <div class="modal-table-wrapper">
+            <table class="modal-table">
+              <thead>
+                <tr>
+                  <th>Sist.</th>
+                  <th>Actividad / Tarea</th>
+                  <th>Repuestos Solicitados</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (act of eventoSeleccionado()?.actividades; track act.id_actividad) {
+                  <tr>
+                    <td>
+                      <span class="system-code-badge">{{ act.cod_sistema }}</span>
+                    </td>
+                    <td>
+                      <strong>{{ act.nombre_actividad }}</strong>
+                      <p class="desc-text">{{ act.descripcion_actividad }}</p>
+                    </td>
+                    <td>
+                      @if (act.id_material) {
+                        <span class="material-badge">
+                          {{ act.cod_materia }} (Cant: {{ act.cantidad }})
+                        </span>
+                      } @else {
+                        <span class="text-muted italic">-</span>
+                      }
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Personal Sugerido (Estrategia) -->
+          @if (eventoSeleccionado()?.plan?.personales?.length) {
+            <div class="section-title-modal">
+              <span class="material-symbols-outlined">group</span>
+              <h4>Personal Estimado para el Plan</h4>
+            </div>
+            <div class="roles-grid">
+              @for (p of eventoSeleccionado()?.plan?.personales; track p.id_plan_personal) {
+                <div class="role-card">
+                  <span class="role-name">{{ p.nombre_rol }}</span>
+                  <span class="role-qty">{{ p.cantidad }} persona(s)</span>
+                </div>
+              }
+            </div>
+          }
+        </div>
+
+        <div class="modal-footer">
+          <button class="btn-secondary" (click)="cerrarModal()">
+            Cerrar
+          </button>
+          <button class="btn-primary" (click)="generarOT()">
+            <span class="material-symbols-outlined">build</span>
+            Generar Orden de Trabajo
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+</div>

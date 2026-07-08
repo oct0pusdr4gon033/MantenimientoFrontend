@@ -1,0 +1,125 @@
+<div class="page-wrapper">
+
+  <!-- ── Header ─────────────────────────────────────────────── -->
+  <div class="page-header">
+    <div class="page-title-group">
+      <span class="material-symbols-outlined page-icon">speed</span>
+      <div>
+        <h1 class="page-title">Historial de Horómetros</h1>
+        <p class="page-subtitle">Listado de lecturas y control de horas de los equipos</p>
+      </div>
+    </div>
+    <button class="btn-primary" (click)="abrirCrear()">
+      <span class="material-symbols-outlined">add</span>
+      Registrar Lectura
+    </button>
+  </div>
+
+  <!-- ── Toasts ─────────────────────────────────────────────── -->
+  @if (mensajeExito) {
+  <div class="toast toast-success">
+    <span class="material-symbols-outlined">check_circle</span>
+    {{ mensajeExito }}
+  </div>
+  }
+  @if (mensajeError) {
+  <div class="toast toast-error">
+    <span class="material-symbols-outlined">error</span>
+    {{ mensajeError }}
+  </div>
+  }
+
+  <!-- ── Barra de filtros ───────────────────────────────────── -->
+  <div class="filter-bar">
+    <div class="search-wrapper">
+      <span class="material-symbols-outlined search-icon">search</span>
+      <input id="filtro-busqueda" type="text" class="search-input"
+        placeholder="Buscar por código de historial, equipo o modelo..."
+        [value]="filtroBusqueda()" (input)="onFiltroChange($any($event.target).value)" />
+      @if (filtroBusqueda()) {
+      <button class="clear-btn" (click)="limpiarFiltro()" title="Limpiar búsqueda">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+      }
+    </div>
+    <div class="filter-stats">
+      <span class="badge-count">{{ historialesFiltrados().length }} resultado(s)</span>
+    </div>
+  </div>
+
+  <!-- ── Tabla ──────────────────────────────────────────────── -->
+  <div class="table-card">
+
+    @if (cargando()) {
+    <div class="table-loader">
+      <span class="spinner-lg"></span>
+      <p>Cargando historiales...</p>
+    </div>
+    } @else if (historialesFiltrados().length === 0) {
+    <div class="table-empty">
+      <span class="material-symbols-outlined empty-icon">search_off</span>
+      <p>No se encontraron registros de horómetros.</p>
+      @if (filtroBusqueda()) {
+      <button class="btn-ghost" (click)="limpiarFiltro()">Limpiar filtro</button>
+      } @else {
+      <button class="btn-primary" (click)="abrirCrear()">Registrar primera lectura</button>
+      }
+    </div>
+    } @else {
+    <div class="table-responsive">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th class="col-index">#</th>
+            <th>Código Registro</th>
+            <th>Equipo (Código/Placa)</th>
+            <th>Modelo / Marca</th>
+            <th>Área Operación</th>
+            <th>Fecha</th>
+            <th>Lectura Actual</th>
+            <th>Horas Op.</th>
+            <th class="col-actions">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (historial of historialesFiltrados(); track historial.codigo_hist; let i = $index) {
+          <tr>
+            <td class="col-index text-muted">{{ i + 1 }}</td>
+            <td>
+              <span class="code-badge">{{ historial.codigo_hist }}</span>
+            </td>
+            <td>
+              <div class="cell-stacked">
+                <span class="cell-main">{{ obtenerEquipoPorId(historial.id_equipo)?.codEqp || 'N/A' }}</span>
+                <span class="cell-sub text-muted">{{ obtenerEquipoPorId(historial.id_equipo)?.placaEqp || '' }}</span>
+              </div>
+            </td>
+            <td>
+              <div class="cell-stacked">
+                <span class="cell-main">{{ obtenerEquipoPorId(historial.id_equipo)?.nombreModelo || '—' }}</span>
+                <span class="cell-sub">{{ obtenerEquipoPorId(historial.id_equipo)?.nombreMarca || '—' }}</span>
+              </div>
+            </td>
+            <td class="area-nombre">{{ obtenerEquipoPorId(historial.id_equipo)?.nombreArea || '—' }}</td>
+            <td class="text-muted-sm">{{ historial.fecha_registro | date:'dd/MM/yyyy HH:mm' }}</td>
+            <td class="text-muted-sm">{{ historial.lectura_actual | number:'1.0-1' }} h</td>
+            <td class="text-muted-sm">{{ historial.horas_operadas | number:'1.0-1' }} h</td>
+            <td class="col-actions">
+              <div class="actions-group">
+                <button class="btn-icon btn-folder" (click)="verDetalle(historial)" title="Ver Historial del Equipo">
+                  <span class="material-symbols-outlined">visibility</span>
+                </button>
+              </div>
+            </td>
+          </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    }
+
+  </div>
+
+</div>
+
+

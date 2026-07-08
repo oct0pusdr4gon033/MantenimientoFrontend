@@ -1,0 +1,244 @@
+<div class="page-wrapper">
+
+  <!-- ── Header Estilo Expediente ─────────────────────────────────────────────── -->
+  <div class="page-header-expediente">
+    <div class="page-title-group-exp">
+      <button class="btn-back-white" (click)="volver()" title="Volver al historial">
+        <span class="material-symbols-outlined" style="font-size: 1.2rem;">arrow_back</span>
+      </button>
+      <span class="material-symbols-outlined page-icon-exp">speed</span>
+      <div class="title-container-exp">
+        <h1>Registrar Lectura de Horómetro</h1>
+        <p class="page-subtitle-exp">Complete los datos para guardar una nueva lectura</p>
+      </div>
+    </div>
+    
+  </div>
+
+  @if (mensajeError) {
+  <div class="toast toast-error">
+    <span class="material-symbols-outlined">error</span>
+    {{ mensajeError }}
+  </div>
+  }
+
+  <div class="form-card premium-card">
+    <form [formGroup]="form">
+      
+      <!-- Fila 1: Equipo y Conductor (Con Modales) -->
+      <div class="form-row">
+        <div class="form-group">
+          <label>Equipo / Maquinaria *</label>
+          <div class="input-wrapper search-input-wrapper" [class.input-error]="form.get('id_equipo')?.touched && form.get('id_equipo')?.invalid">
+            <span class="input-icon material-symbols-outlined">construction</span>
+            <input type="text" [value]="equipoSeleccionadoNombre()" placeholder="Seleccione un equipo" readonly class="pointer-input" (click)="abrirModalEquipo()">
+            @if (form.get('id_equipo')?.value) {
+            <button type="button" class="btn-clear-input" (click)="limpiarEquipo()" title="Limpiar equipo">
+              <span class="material-symbols-outlined">close</span>
+            </button>
+            }
+            <button type="button" class="btn-search-inside" (click)="abrirModalEquipo()">
+              <span class="material-symbols-outlined">search</span> Buscar
+            </button>
+          </div>
+          @if (form.get('id_equipo')?.touched && form.get('id_equipo')?.invalid) {
+            <span class="field-error">Debe seleccionar un equipo.</span>
+          }
+        </div>
+
+        <div class="form-group">
+          <label>Conductor Asignado *</label>
+          <div class="input-wrapper search-input-wrapper" [class.input-error]="form.get('dni_conductor')?.touched && form.get('dni_conductor')?.invalid">
+            <span class="input-icon material-symbols-outlined">person</span>
+            <input type="text" [value]="conductorSeleccionadoNombre()" placeholder="Seleccione un conductor" readonly class="pointer-input" (click)="abrirModalConductor()">
+            @if (form.get('dni_conductor')?.value) {
+            <button type="button" class="btn-clear-input" (click)="limpiarConductor()" title="Limpiar conductor">
+              <span class="material-symbols-outlined">close</span>
+            </button>
+            }
+            <button type="button" class="btn-search-inside" (click)="abrirModalConductor()">
+              <span class="material-symbols-outlined">search</span> Buscar
+            </button>
+          </div>
+          @if (form.get('dni_conductor')?.touched && form.get('dni_conductor')?.invalid) {
+            <span class="field-error">Debe seleccionar un conductor.</span>
+          }
+        </div>
+      </div>
+
+      <!-- Fila 2: Lecturas -->
+      <div class="form-row">
+        <div class="form-group">
+          <label for="lectura_anterior">Lectura Anterior</label>
+          <div class="input-wrapper input-disabled">
+            <span class="input-icon material-symbols-outlined">history</span>
+            <input type="number" id="lectura_anterior" formControlName="lectura_anterior" placeholder="0.00" readonly>
+          </div>
+          <span class="field-hint">Se carga automáticamente según el equipo seleccionado.</span>
+        </div>
+
+        <div class="form-group">
+          <label for="lectura_actual">Lectura Actual (h) *</label>
+          <div class="input-wrapper" [class.input-error]="form.get('lectura_actual')?.invalid && (form.get('lectura_actual')?.dirty || form.get('lectura_actual')?.touched)">
+            <span class="input-icon material-symbols-outlined" style="color: #e86b1a;">speed</span>
+            <input type="number" id="lectura_actual" formControlName="lectura_actual" placeholder="0.00">
+          </div>
+          @if (form.get('lectura_actual')?.hasError('required') && form.get('lectura_actual')?.touched) {
+            <span class="field-error">Ingrese una lectura actual válida.</span>
+          }
+          @if (form.get('lectura_actual')?.hasError('menorAnterior')) {
+            <span class="field-error">La lectura no puede ser menor o igual a la anterior.</span>
+          }
+          @if (form.get('lectura_actual')?.hasError('maxHoras')) {
+            <span class="field-error">No se pueden operar más de 24 horas en un solo registro.</span>
+          }
+        </div>
+      </div>
+
+      <!-- Fila 3: Horas Operadas y Observaciones -->
+      <div class="form-row">
+        <div class="form-group">
+          <label for="horas_operadas">Horas Operadas</label>
+          <div class="input-wrapper input-disabled" style="background: #f0fdf4; border-color: #bbf7d0;">
+            <span class="input-icon material-symbols-outlined" style="color: #10b981;">schedule</span>
+            <input type="number" id="horas_operadas" formControlName="horas_operadas" placeholder="0.00" readonly>
+          </div>
+          <span class="field-hint" style="color: #10b981;">Cálculo automático de la operación.</span>
+        </div>
+
+        <div class="form-group">
+          <label for="observaciones">Observaciones / Novedades</label>
+          <div class="input-wrapper">
+            <span class="input-icon material-symbols-outlined">edit_note</span>
+            <input type="text" id="observaciones" formControlName="observaciones" placeholder="Detalles de la operación...">
+          </div>
+        </div>
+      </div>
+
+      <div class="form-actions" style="margin-top: 2rem; display: flex; justify-content: flex-end; gap: 1rem; border-top: 1px solid #e2e8f0; padding-top: 1.5rem;">
+        <button type="button" class="btn-back-white" (click)="volver()" [disabled]="guardando()" style="width: auto; padding: 0 1.25rem; height: 42px;">
+          Cancelar
+        </button>
+        <button type="button" class="btn-primary-exp" (click)="guardar()" [disabled]="form.invalid || guardando()" style="height: 42px;">
+          @if (guardando()) {
+          <span class="material-symbols-outlined spin">refresh</span> Guardando...
+          } @else {
+          <span class="material-symbols-outlined">save</span> Guardar Registro
+          }
+        </button>
+      </div>
+
+    </form>
+  </div>
+
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- Modal de Selección de Equipo                            -->
+<!-- ═══════════════════════════════════════════════════════ -->
+@if (modalEquipoVisible()) {
+<div class="modal-backdrop" (click)="cerrarModalEquipo()">
+  <div class="modal-card modal-lg" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <div class="modal-title-group">
+        <span class="material-symbols-outlined modal-icon">construction</span>
+        <h2 class="modal-title">Seleccionar Equipo</h2>
+      </div>
+      <button class="modal-close" (click)="cerrarModalEquipo()">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+
+    <div class="modal-body">
+      <div class="search-wrapper" style="margin-bottom: 1rem;">
+        <span class="material-symbols-outlined search-icon">search</span>
+        <input type="text" class="search-input" placeholder="Buscar por código, placa, modelo..." 
+          (input)="filtrarEquipos($event)" [value]="buscarEquipoTexto()">
+      </div>
+
+      <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+        <table class="data-table modal-table">
+          <thead>
+            <tr>
+              <th>Placa</th>
+              <th>Código</th>
+              <th>Modelo</th>
+              <th>Marca</th>
+              <th>Lectura (h)</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (eqp of equiposFiltrados(); track eqp.idEquipo) {
+            <tr (click)="seleccionarEquipo(eqp)" class="selectable-row">
+              <td><span class="code-badge">{{ eqp.placaEqp || 'S/P' }}</span></td>
+              <td class="text-muted-sm">{{ eqp.codEqp }}</td>
+              <td>{{ eqp.nombreModelo }}</td>
+              <td>{{ eqp.nombreMarca }}</td>
+              <td class="text-muted-sm">{{ eqp.horometroActual | number:'1.0-1' }}</td>
+            </tr>
+            }
+            @if (equiposFiltrados().length === 0) {
+            <tr>
+              <td colspan="5" style="text-align: center; padding: 2rem; color: #6b7280;">No se encontraron equipos</td>
+            </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+}
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- Modal de Selección de Conductor                         -->
+<!-- ═══════════════════════════════════════════════════════ -->
+@if (modalConductorVisible()) {
+<div class="modal-backdrop" (click)="cerrarModalConductor()">
+  <div class="modal-card modal-lg" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <div class="modal-title-group">
+        <span class="material-symbols-outlined modal-icon">person</span>
+        <h2 class="modal-title">Seleccionar Conductor</h2>
+      </div>
+      <button class="modal-close" (click)="cerrarModalConductor()">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+
+    <div class="modal-body">
+      <div class="search-wrapper" style="margin-bottom: 1rem;">
+        <span class="material-symbols-outlined search-icon">search</span>
+        <input type="text" class="search-input" placeholder="Buscar por DNI, Nombre o Apellido..." 
+          (input)="filtrarConductores($event)" [value]="buscarConductorTexto()">
+      </div>
+
+      <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+        <table class="data-table modal-table">
+          <thead>
+            <tr>
+              <th>DNI</th>
+              <th>Nombres Completos</th>
+              <th>Código</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (emp of empleadosFiltrados(); track emp.dni_empleado) {
+            <tr (click)="seleccionarConductor(emp)" class="selectable-row">
+              <td><span class="code-badge">{{ emp.dni_empleado }}</span></td>
+              <td>{{ emp.nombre }} {{ emp.apellido1 }} {{ emp.apellido2 }}</td>
+              <td class="text-muted-sm">{{ emp.codigo_empleado }}</td>
+            </tr>
+            }
+            @if (empleadosFiltrados().length === 0) {
+            <tr>
+              <td colspan="3" style="text-align: center; padding: 2rem; color: #6b7280;">No se encontraron conductores</td>
+            </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+}

@@ -1,0 +1,277 @@
+<div class="page-wrapper">
+
+  <!-- ── Header ─────────────────────────────────────────────── -->
+  <div class="page-header">
+    <div class="page-title-group">
+      <button class="btn-back" (click)="volverAFlotas()" title="Volver a flotas">
+        <span class="material-symbols-outlined">arrow_back</span>
+      </button>
+      <span class="material-symbols-outlined page-icon" style="color: #e86b1a;">local_shipping</span>
+      <div>
+        <h1 class="page-title">Detalle de Flota: {{ codFlota }}</h1>
+        <p class="page-subtitle">Información general y equipos asignados</p>
+      </div>
+    </div>
+  </div>
+
+  @if (mensajeExito) {
+  <div class="toast toast-success">
+    <span class="material-symbols-outlined">check_circle</span>
+    {{ mensajeExito }}
+  </div>
+  }
+
+  @if (cargando()) {
+  <div class="table-card table-loader" style="padding: 4rem;">
+    <span class="spinner-lg"></span>
+    <p>Cargando información de la flota...</p>
+  </div>
+  } @else if (errorGeneral()) {
+  <div class="table-card table-empty" style="padding: 4rem;">
+    <span class="material-symbols-outlined empty-icon" style="color: #ef4444;">error</span>
+    <p style="color: #ef4444;">{{ errorGeneral() }}</p>
+    <button class="btn-ghost" (click)="volverAFlotas()">Volver al listado</button>
+  </div>
+  } @else if (detalle()) {
+
+  <!-- ── Información de la Flota ────────────────────────────── -->
+  <div class="table-card"
+    style="padding: 1.5rem; background: linear-gradient(135deg, rgba(139,92,246,0.03), rgba(232,107,26,0.03)); margin-bottom: 0.5rem;">
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem;">
+      <div class="cell-stacked">
+        <span class="cell-sub">Nombre de Flota</span>
+        <span class="cell-main" style="font-size: 1.1rem;">{{ detalle()!.nombreFlota }}</span>
+      </div>
+      <div class="cell-stacked">
+        <span class="cell-sub">Modelo de Equipo</span>
+        <span class="cell-main">{{ detalle()!.nombreModelo }} ({{ detalle()!.nombreMarca }})</span>
+      </div>
+      <div class="cell-stacked">
+        <span class="cell-sub">Tipo de Equipo</span>
+        <span class="cell-main">{{ detalle()!.nombreTipo }}</span>
+      </div>
+      <div class="cell-stacked">
+        <span class="cell-sub">Tipo de Control</span>
+        <span class="cell-main">{{ detalle()!.tipoControl || 'No definido' }}</span>
+      </div>
+      <div class="cell-stacked">
+        <span class="cell-sub">Total Equipos</span>
+        <span class="cell-main" style="color: #8b5cf6; font-size: 1.2rem; font-weight: 700;">{{ detalle()!.totalEquipos
+          }}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Equipos de la Flota ────────────────────────────────── -->
+  <div class="page-header" style="margin-top: 1rem;">
+    <h2 class="page-title" style="font-size: 1.1rem;">Equipos Asignados</h2>
+    <button class="btn-primary" (click)="abrirCrearEquipo()">
+      <span class="material-symbols-outlined">add</span>
+      Agregar Equipo
+    </button>
+  </div>
+
+  <div class="table-card">
+    @if (!detalle()!.equipos || detalle()!.equipos.length === 0) {
+    <div class="table-empty">
+      <span class="material-symbols-outlined empty-icon">construction</span>
+      <p>Esta flota no tiene equipos asignados aún.</p>
+      <button class="btn-primary" (click)="abrirCrearEquipo()">Agregar primer equipo</button>
+    </div>
+    } @else {
+    <div class="table-responsive">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th class="col-index">#</th>
+            <th>Código</th>
+            <th>Placa / Serie</th>
+            <th>Área Operación</th>
+            <th>Horómetro</th>
+            <th>Estado</th>
+            <th class="col-actions">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (eq of detalle()!.equipos; track eq.idEquipo; let i = $index) {
+          <tr>
+            <td class="col-index text-muted">{{ i + 1 }}</td>
+            <td><span class="code-badge">{{ eq.codEqp }}</span></td>
+            <td>
+              <div class="cell-stacked">
+                <span class="cell-main">{{ eq.placaEqp || 'Sin placa' }}</span>
+                <span class="cell-sub">{{ eq.numSerie || 'Sin serie' }}</span>
+              </div>
+            </td>
+            <td class="area-nombre">{{ eq.nombreArea }}</td>
+            <td>
+              <div class="cell-stacked">
+                <span class="cell-main">{{ eq.horometroActual | number:'1.0-1' }} h</span>
+                <span class="cell-sub">Ini: {{ eq.horometroInicial | number:'1.0-1' }}</span>
+              </div>
+            </td>
+            <td>
+              <span class="estado-badge" [ngClass]="badgeClass(eq.estadoOperativo)">
+                {{ eq.estadoOperativo }}
+              </span>
+            </td>
+            <td class="col-actions">
+              <div class="actions-group">
+                <button class="btn-icon btn-edit" (click)="abrirEditarEquipo(eq)" title="Editar Equipo">
+                  <span class="material-symbols-outlined">edit</span>
+                </button>
+                <button class="btn-icon" (click)="verHistorialHorometros(eq)" title="Ver Historial de Horómetros" style="color: #3b82f6; background: rgba(59, 130, 246, 0.1);">
+                  <span class="material-symbols-outlined">history</span>
+                </button>
+              </div>
+            </td>
+          </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    }
+  </div>
+  }
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- Modal Crear / Editar Equipo                             -->
+<!-- ═══════════════════════════════════════════════════════ -->
+@if (modalMode()) {
+<div class="modal-backdrop" (click)="cerrarModal()">
+  <div class="modal-card modal-lg" (click)="$event.stopPropagation()">
+
+    <div class="modal-header">
+      <div class="modal-title-group">
+        <span class="material-symbols-outlined modal-icon">
+          {{ modalMode() === 'crear' ? 'add_circle' : 'edit' }}
+        </span>
+        <h2 class="modal-title">
+          {{ modalMode() === 'crear' ? 'Nuevo Equipo' : 'Editar Equipo' }}
+        </h2>
+      </div>
+      <button class="modal-close" (click)="cerrarModal()">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+
+    <div class="modal-body">
+
+      @if (mensajeError) {
+      <div class="form-error-alert">
+        <span class="material-symbols-outlined">error</span>
+        {{ mensajeError }}
+      </div>
+      }
+
+      <div class="form-row">
+        <!-- Código Equipo -->
+        <div class="form-group">
+          <label for="form-cod">Código de Equipo *</label>
+          <div class="input-wrapper" [class.input-disabled]="modalMode() === 'editar'">
+            <span class="input-icon material-symbols-outlined">tag</span>
+            <input id="form-cod" type="text" [(ngModel)]="form.codEqp" placeholder="Ej: EQ-001"
+              [readonly]="modalMode() === 'editar'" />
+          </div>
+          @if (modalMode() === 'editar') { <span class="field-hint">El código no es modificable.</span> }
+        </div>
+
+        <!-- Flota (Readonly porque ya estamos dentro de una) -->
+        <div class="form-group">
+          <label>Flota Asignada *</label>
+          <div class="input-wrapper input-disabled">
+            <span class="input-icon material-symbols-outlined">local_shipping</span>
+            <input type="text" [value]="detalle()?.nombreFlota" readonly />
+          </div>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <!-- Placa -->
+        <div class="form-group">
+          <label for="form-placa">Placa</label>
+          <div class="input-wrapper">
+            <span class="input-icon material-symbols-outlined">pin</span>
+            <input id="form-placa" type="text" [(ngModel)]="form.placaEqp" placeholder="Opcional" />
+          </div>
+        </div>
+
+        <!-- Serie -->
+        <div class="form-group">
+          <label for="form-serie">Número de Serie</label>
+          <div class="input-wrapper">
+            <span class="input-icon material-symbols-outlined">barcode</span>
+            <input id="form-serie" type="text" [(ngModel)]="form.numSerie" placeholder="Opcional" />
+          </div>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <!-- Área de Operación -->
+        <div class="form-group">
+          <label for="form-area">Área de Operación *</label>
+          <div class="input-wrapper select-wrapper">
+            <span class="input-icon material-symbols-outlined">activity_zone</span>
+            <select id="form-area" [(ngModel)]="form.codAreaOpe">
+              <option value="" disabled>-- Seleccione un área --</option>
+              @for (area of areas(); track area.codigoArea) {
+              <option [value]="area.codigoArea">{{ area.nombreArea }}</option>
+              }
+            </select>
+          </div>
+        </div>
+
+        <!-- Estado Operativo -->
+        <div class="form-group">
+          <label for="form-estado">Estado Operativo *</label>
+          <div class="input-wrapper select-wrapper">
+            <span class="input-icon material-symbols-outlined">power_settings_new</span>
+            <select id="form-estado" [(ngModel)]="form.estadoOperativo">
+              <option value="" disabled>-- Seleccione estado --</option>
+              @for (est of estadosOperativos; track est) {
+              <option [value]="est">{{ est }}</option>
+              }
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <!-- Horómetro Inicial -->
+        <div class="form-group">
+          <label for="form-h-ini">Horómetro Inicial</label>
+          <div class="input-wrapper" [class.input-disabled]="modalMode() === 'editar'">
+            <span class="input-icon material-symbols-outlined">timer</span>
+            <input id="form-h-ini" type="number" step="0.1" [(ngModel)]="form.horometroInicial"
+              [readonly]="modalMode() === 'editar'" />
+          </div>
+        </div>
+
+        <!-- Horómetro Actual -->
+        <div class="form-group">
+          <label for="form-h-act">Horómetro Actual</label>
+          <div class="input-wrapper">
+            <span class="input-icon material-symbols-outlined">timer</span>
+            <input id="form-h-act" type="number" step="0.1" [(ngModel)]="form.horometroActual" />
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn-ghost" (click)="cerrarModal()" [disabled]="guardando()">Cancelar</button>
+      <button class="btn-primary" (click)="guardarEquipo()" [disabled]="guardando()">
+        @if (guardando()) {
+        <span class="spinner-sm spinner-white"></span> Guardando...
+        } @else {
+        <span class="material-symbols-outlined">save</span>
+        {{ modalMode() === 'crear' ? 'Registrar Equipo' : 'Guardar Cambios' }}
+        }
+      </button>
+    </div>
+
+  </div>
+</div>
+}

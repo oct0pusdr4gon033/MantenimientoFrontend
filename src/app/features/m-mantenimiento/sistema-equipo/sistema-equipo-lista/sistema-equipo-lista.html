@@ -1,0 +1,175 @@
+<div class="page-wrapper">
+
+  <!-- ── Header de página ──────────────────────────────────── -->
+  <div class="page-header">
+    <div class="page-title-group">
+      <span class="material-symbols-outlined page-icon">settings_applications</span>
+      <div>
+        <h1 class="page-title">Sistemas de Equipo</h1>
+        <p class="page-subtitle">Gestión y administración de sistemas de equipo</p>
+      </div>
+    </div>
+    <button class="btn-primary" (click)="abrirCrear()">
+      <span class="material-symbols-outlined">add</span>
+      Nuevo Sistema
+    </button>
+  </div>
+
+  <!-- ── Toast notificaciones ──────────────────────────────── -->
+  @if (mensajeExito) {
+  <div class="toast toast-success">
+    <span class="material-symbols-outlined">check_circle</span>
+    {{ mensajeExito }}
+  </div>
+  }
+  @if (mensajeError && !modalMode()) {
+  <div class="toast toast-error">
+    <span class="material-symbols-outlined">error</span>
+    {{ mensajeError }}
+  </div>
+  }
+
+  <!-- ── Barra de filtros ───────────────────────────────────── -->
+  <div class="filter-bar">
+    <div class="search-wrapper">
+      <span class="material-symbols-outlined search-icon">search</span>
+      <input id="filtro-busqueda" type="text" class="search-input" placeholder="Buscar por código o nombre..."
+        [value]="filtroBusqueda()" (input)="onFiltroChange($any($event.target).value)" 
+        (keyup.enter)="buscarConApi()" />
+      @if (filtroBusqueda()) {
+      <button class="clear-btn" (click)="limpiarFiltro()" title="Limpiar búsqueda">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+      }
+    </div>
+    <div class="filter-stats">
+      <span class="badge-count">{{ sistemasFiltrados().length }} resultado(s)</span>
+    </div>
+  </div>
+
+  <!-- ── Tabla ─────────────────────────────────────────────── -->
+  <div class="table-card">
+
+    @if (cargando()) {
+    <div class="table-loader">
+      <span class="spinner-lg"></span>
+      <p>Cargando sistemas de equipo...</p>
+    </div>
+    } @else if (sistemasFiltrados().length === 0) {
+    <div class="table-empty">
+      <span class="material-symbols-outlined empty-icon">search_off</span>
+      <p>No se encontraron sistemas de equipo.</p>
+      @if (filtroBusqueda()) {
+      <button class="btn-ghost" (click)="limpiarFiltro()">Limpiar filtro</button>
+      } @else {
+      <button class="btn-primary" (click)="abrirCrear()">Crear primer sistema</button>
+      }
+    </div>
+    } @else {
+    <div class="table-responsive">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th class="col-index">#</th>
+            <th>Código de Sistema</th>
+            <th>Nombre de Sistema</th>
+            <th class="col-actions">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (sistema of sistemasFiltrados(); track sistema.id_sistema; let i = $index) {
+          <tr>
+            <td class="col-index text-muted">{{ i + 1 }}</td>
+            <td>
+              <span class="code-badge">{{ sistema.cod_sist }}</span>
+            </td>
+            <td class="area-nombre">{{ sistema.nombre_sist }}</td>
+            <td class="col-actions">
+              <div class="actions-group">
+                <button class="btn-icon btn-edit" (click)="abrirEditar(sistema)" title="Editar">
+                  <span class="material-symbols-outlined">edit</span>
+                </button>
+              </div>
+            </td>
+          </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    }
+
+  </div>
+
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- Modal Crear / Editar                                    -->
+<!-- ═══════════════════════════════════════════════════════ -->
+@if (modalMode()) {
+<div class="modal-backdrop" (click)="cerrarModal()">
+  <div class="modal-card" (click)="$event.stopPropagation()">
+
+    <div class="modal-header">
+      <div class="modal-title-group">
+        <span class="material-symbols-outlined modal-icon">
+          {{ modalMode() === 'crear' ? 'add_circle' : 'edit' }}
+        </span>
+        <h2 class="modal-title">
+          {{ modalMode() === 'crear' ? 'Nuevo Sistema de Equipo' : 'Editar Sistema de Equipo' }}
+        </h2>
+      </div>
+      <button class="modal-close" (click)="cerrarModal()">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+
+    <div class="modal-body">
+
+      @if (mensajeError) {
+      <div class="form-error-alert">
+        <span class="material-symbols-outlined">error</span>
+        {{ mensajeError }}
+      </div>
+      }
+
+      <div class="form-group">
+        <label for="form-codigo">Código de Sistema</label>
+        <div class="input-wrapper" [class.input-disabled]="modalMode() === 'editar'">
+          <span class="input-icon material-symbols-outlined">tag</span>
+          <input id="form-codigo" type="text" [(ngModel)]="form.cod_sist" name="cod_sist"
+            placeholder="Ej: MOT" [readonly]="modalMode() === 'editar'" />
+        </div>
+        @if (modalMode() === 'editar') {
+        <span class="field-hint">El código no puede modificarse.</span>
+        }
+      </div>
+
+      <div class="form-group">
+        <label for="form-nombre">Nombre de Sistema</label>
+        <div class="input-wrapper">
+          <span class="input-icon material-symbols-outlined">settings_applications</span>
+          <input id="form-nombre" type="text" [(ngModel)]="form.nombre_sist" name="nombre_sist"
+            placeholder="Ej: Motor Diesel" />
+        </div>
+      </div>
+
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn-ghost" (click)="cerrarModal()" [disabled]="guardando()">
+        Cancelar
+      </button>
+      <button class="btn-primary" (click)="guardar()" [disabled]="guardando()">
+        @if (guardando()) {
+        <span class="spinner-sm spinner-white"></span>
+        Guardando...
+        } @else {
+        <span class="material-symbols-outlined">save</span>
+        {{ modalMode() === 'crear' ? 'Crear Sistema' : 'Guardar Cambios' }}
+        }
+      </button>
+    </div>
+
+  </div>
+</div>
+}

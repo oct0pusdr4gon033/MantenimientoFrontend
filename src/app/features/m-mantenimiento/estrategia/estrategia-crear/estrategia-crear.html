@@ -1,0 +1,129 @@
+<div class="page-wrapper">
+  
+  <!-- Header -->
+  <div class="page-header">
+    <div class="page-title-group">
+      <button class="btn-back" routerLink="/GestionMantenimiento/estrategia" title="Regresar al listado">
+        <span class="material-symbols-outlined">arrow_back</span>
+      </button>
+      <span class="material-symbols-outlined page-icon">add_circle</span>
+      <div>
+        <h1 class="page-title">Nueva Estrategia de Mantenimiento</h1>
+        <p class="page-subtitle">Paso 1: Registre los datos generales y asigne una flota o equipo.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="table-card" style="padding: 2rem;">
+    <form [formGroup]="estrategiaForm" (ngSubmit)="siguiente()">
+      
+      <!-- Datos Generales -->
+      <div style="margin-bottom: 2rem;">
+        <h3 style="font-size: 1.1rem; font-weight: 700; color: #1a1a2e; margin-bottom: 1.5rem; border-bottom: 1px solid #f3f4f6; padding-bottom: 0.5rem;">1. Datos Generales</h3>
+        
+        <div class="form-row">
+          <div class="form-group">
+            <label>Código de Estrategia *</label>
+            <div class="input-wrapper">
+              <span class="input-icon material-symbols-outlined">tag</span>
+              <input type="text" formControlName="cod_estrategia" placeholder="Ej: EST-001">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Título / Descripción *</label>
+            <div class="input-wrapper">
+              <span class="input-icon material-symbols-outlined">description</span>
+              <input type="text" formControlName="titulo_estrategia" placeholder="Ej: Mantenimiento Preventivo 250H">
+            </div>
+          </div>
+        </div>
+
+        <div class="form-row" style="margin-top: 1rem;">
+          <div class="form-group">
+            <label>Estado</label>
+            <div class="input-wrapper select-wrapper">
+              <span class="input-icon material-symbols-outlined">toggle_on</span>
+              <select formControlName="estado">
+                <option value="ACTIVO">ACTIVO</option>
+                <option value="INACTIVO">INACTIVO</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Asignación -->
+      <div>
+        <h3 style="font-size: 1.1rem; font-weight: 700; color: #1a1a2e; margin-bottom: 1.5rem; border-bottom: 1px solid #f3f4f6; padding-bottom: 0.5rem;">2. Asignación</h3>
+        
+        <div class="form-group" style="margin-bottom: 1.5rem;">
+          <label>Aplicar a:</label>
+          <div style="display: flex; gap: 1.5rem;">
+            <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; font-weight: 500;">
+              <input type="radio" formControlName="tipoAsignacion" value="flota">
+              Toda una Flota
+            </label>
+            <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; font-weight: 500;">
+              <input type="radio" formControlName="tipoAsignacion" value="equipo">
+              Equipo Individual
+            </label>
+          </div>
+        </div>
+
+        <!-- Selector de Flota -->
+        @if(estrategiaForm.get('tipoAsignacion')?.value === 'flota') {
+          <div class="form-group" style="background: rgba(232, 107, 26, 0.05); padding: 1.5rem; border-radius: 8px; border: 1px solid rgba(232, 107, 26, 0.2);">
+            <label>Flota Seleccionada *</label>
+            <div style="display: flex; gap: 0.5rem;">
+              <div class="input-wrapper" style="flex: 1;">
+                <span class="input-icon material-symbols-outlined">local_shipping</span>
+                <input type="text" [value]="flotaSeleccionada?.codFlota || ''" readonly placeholder="Seleccione una flota...">
+              </div>
+              <button type="button" class="btn-primary" (click)="showModalFlota = true" style="padding: 0.6rem 1rem;">
+                <span class="material-symbols-outlined">search</span>
+              </button>
+            </div>
+          </div>
+        }
+
+        <!-- Selector de Equipo -->
+        @if(estrategiaForm.get('tipoAsignacion')?.value === 'equipo') {
+          <div class="form-group" style="background: rgba(59, 130, 246, 0.05); padding: 1.5rem; border-radius: 8px; border: 1px solid rgba(59, 130, 246, 0.2);">
+            <label>Equipo Seleccionado *</label>
+            <div style="display: flex; gap: 0.5rem;">
+              <div class="input-wrapper" style="flex: 1;">
+                <span class="input-icon material-symbols-outlined">precision_manufacturing</span>
+                <input type="text" [value]="equipoSeleccionado?.codEqp || ''" readonly placeholder="Seleccione un equipo...">
+              </div>
+              <button type="button" class="btn-primary" (click)="showModalEquipo = true" style="padding: 0.6rem 1rem; background: #3b82f6; box-shadow: none;">
+                <span class="material-symbols-outlined">search</span>
+              </button>
+            </div>
+          </div>
+        }
+      </div>
+
+      <!-- Actions -->
+      <div style="margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid #f3f4f6; display: flex; justify-content: flex-end; gap: 1rem;">
+        <button type="button" class="btn-ghost" routerLink="/GestionMantenimiento/estrategia">
+          Cancelar
+        </button>
+        <button type="submit" class="btn-primary" [disabled]="!isFormValid()">
+          Siguiente: Añadir Detalles 
+          <span class="material-symbols-outlined">arrow_forward</span>
+        </button>
+      </div>
+
+    </form>
+  </div>
+
+</div>
+
+<!-- Modals -->
+@if(showModalFlota) {
+  <app-modal-flota (onClose)="showModalFlota = false" (onSelect)="onFlotaSelected($event)"></app-modal-flota>
+}
+@if(showModalEquipo) {
+  <app-modal-equipo (onClose)="showModalEquipo = false" (onSelect)="onEquipoSelected($event)"></app-modal-equipo>
+}

@@ -1,0 +1,259 @@
+<div class="page-wrapper">
+  <header class="page-header">
+    <div class="page-title-group">
+      <button class="btn-ghost" (click)="volver()" style="padding: 0.4rem; border: none;">
+        <span class="material-symbols-outlined">arrow_back</span>
+      </button>
+      <span class="material-symbols-outlined page-icon" style="color: #e86b1a;">find_in_page</span>
+      <div>
+        <h1 class="page-title">Detalle de Cotización</h1>
+        <p class="page-subtitle">Revisa la información y aprueba la cotización para generar una Orden de Compra.</p>
+      </div>
+    </div>
+    <div style="display: flex; gap: 0.75rem;">
+      <button class="btn-primary" (click)="imprimirCotizacion()"
+        style="background: #e86b1a; box-shadow: 0 3px 12px rgba(232, 107, 26, 0.3);">
+        <span class="material-symbols-outlined">print</span> Imprimir
+      </button>
+      @if (cotizacion()?.estado === 'PENDIENTE') {
+      @if (modoEdicion()) {
+      <button class="btn-ghost" (click)="cancelarEdicion()">
+        <span class="material-symbols-outlined">close</span> Cancelar
+      </button>
+      <button class="btn-primary" (click)="guardarPrecios()" [disabled]="procesando()"
+        style="background: #3b82f6; box-shadow: 0 3px 12px rgba(59, 130, 246, 0.3);">
+        @if (procesando()) { <span class="spinner-sm spinner-white"></span> }
+        <span class="material-symbols-outlined" *ngIf="!procesando()">save</span>
+        Guardar Cambios
+      </button>
+      } @else {
+      <button class="btn-secondary" (click)="activarEdicion()"
+        style="background: white; border: 1px solid #d1d5db; color: #374151;">
+        <span class="material-symbols-outlined">edit</span> Editar Precios
+      </button>
+      <button class="btn-primary" (click)="aprobarCotizacion()" [disabled]="procesando()"
+        style="background: linear-gradient(135deg, #10b981, #059669); box-shadow: 0 3px 12px rgba(16, 185, 129, 0.3);">
+        @if (procesando()) { <span class="spinner-sm spinner-white"></span> }
+        <span class="material-symbols-outlined" *ngIf="!procesando()">check_circle</span>
+        Aprobar Cotización
+      </button>
+      }
+      }
+    </div>
+  </header>
+
+  @if (successMessage()) {
+  <div class="toast toast-success">
+    <span class="material-symbols-outlined">check_circle</span>
+    <span>{{ successMessage() }}</span>
+  </div>
+  }
+  @if (errorMessage()) {
+  <div class="toast toast-error">
+    <span class="material-symbols-outlined">error</span>
+    <span>{{ errorMessage() }}</span>
+  </div>
+  }
+
+  @if (loading()) {
+  <div class="table-card table-loader">
+    <div class="spinner-lg" style="border-top-color: #e86b1a;"></div>
+    <p>Cargando detalles de cotización...</p>
+  </div>
+  }
+
+  @if (!loading() && cotizacion()) {
+  <!-- ── BLOQUE DE IMPRESIÓN EXCLUSIVO (Oculto en pantalla, visible al imprimir) ── -->
+  <div class="print-only-receipt">
+    <div class="receipt-header">
+      <div class="receipt-company">
+        <h2>MULTICOSAILOR SAC</h2>
+        <p>Área de Operaciones de Compras y Logística</p>
+      </div>
+      <div class="receipt-doc-details">
+        <h3>COTIZACIÓN DE PROVEEDOR</h3>
+        <h2 class="receipt-code">{{ cotizacion()!.nro_cotizacion }}</h2>
+        <span class="receipt-status">ESTADO: {{ cotizacion()!.estado }}</span>
+      </div>
+    </div>
+    
+    <h4>SECCIÓN PROVEEDOR</h4>
+    <hr />
+    <div class="receipt-metadata-grid-ot" style="grid-template-columns: repeat(2, 1fr);">
+      <div><strong>Razón Social:</strong> {{ cotizacion()!.razon_social_proveedor }}</div>
+      <div><strong>RUC:</strong> {{ cotizacion()!.ruc_proveedor }}</div>
+      <div><strong>Nombre Comercial:</strong> {{ proveedorDetalle()?.nombre_comercial || '-' }}</div>
+      <div><strong>Teléfono:</strong> {{ proveedorDetalle()?.telefono || '-' }}</div>
+      <div><strong>Correo:</strong> {{ proveedorDetalle()?.correo || '-' }}</div>
+      <div style="grid-column: span 2;"><strong>Dirección:</strong> {{ proveedorDetalle()?.direccion || '-' }}</div>
+    </div>
+
+    <hr style="margin-bottom: 1.5rem;" />
+    <div class="receipt-metadata-grid-ot">
+      <div><strong>Fecha de Cotización:</strong> {{ cotizacion()!.fecha_cotizacion | date:'dd/MM/yyyy HH:mm' }}</div>
+      <div><strong>Solicitud Base:</strong> {{ cotizacion()!.cod_solicitud_pedido || '-' }}</div>
+    </div>
+
+    <hr />
+    <h4>MATERIALES COTIZADOS</h4>
+    <table class="receipt-table">
+      <thead>
+        <tr>
+          <th>Cód.</th>
+          <th>Descripción del Material</th>
+          <th>Unidad</th>
+          <th class="text-right">Cantidad</th>
+          <th class="text-right">P. Unitario</th>
+          <th class="text-right">Subtotal</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (d of cotizacion()!.detalles; track d.id_cotizacion_detalle) {
+        <tr>
+          <td>{{ d.cod_materia }}</td>
+          <td>{{ d.descripcion_material }}</td>
+          <td>{{ unidadesMap()[d.id_material] || '-' }}</td>
+          <td class="text-right">{{ d.cantidad }}</td>
+          <td class="text-right">{{ d.precio_unitario | currency:'PEN':'symbol-narrow' }}</td>
+          <td class="text-right"><strong>{{ d.subtotal | currency:'PEN':'symbol-narrow' }}</strong></td>
+        </tr>
+        } @empty {
+        <tr><td colspan="6">No hay detalles.</td></tr>
+        }
+      </tbody>
+      <tfoot>
+        <tr style="border-top: 2px solid #000;">
+          <td colspan="4"></td>
+          <td class="text-right"><strong>TOTAL:</strong></td>
+          <td class="text-right" style="font-size: 1.1em;"><strong>{{ cotizacion()!.total | currency:'PEN':'symbol-narrow' }}</strong></td>
+        </tr>
+      </tfoot>
+    </table>
+
+    <div class="receipt-signatures">
+      <div class="signature-line">
+        <div class="line"></div>
+        <span>Firma del Proveedor (Opcional)</span>
+      </div>
+      <div class="signature-line">
+        <div class="line"></div>
+        <span>Aprobado por Jefatura de Compras</span>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 1.5rem;" class="screen-content">
+    <!-- Cabecera de Documento -->
+    <section class="table-card" style="padding: 1.5rem;">
+      <div
+        style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.5rem; border-bottom: 1px solid #e5e7eb; padding-bottom: 1rem;">
+        <div>
+          <h2 style="font-size: 1.25rem; font-weight: 800; color: #1f2937; margin: 0 0 0.25rem 0;">Cotización Nro. {{
+            cotizacion()!.nro_cotizacion }}</h2>
+          <p style="color: #6b7280; font-size: 0.85rem; margin: 0;">Emitida el {{ cotizacion()!.fecha_cotizacion |
+            date:'dd/MM/yyyy HH:mm' }}</p>
+        </div>
+        <span class="category-name-badge" [ngClass]="{
+            'text-warning-badge': cotizacion()!.estado === 'PENDIENTE',
+            'text-success-badge': cotizacion()!.estado === 'APROBADO',
+            'text-danger-badge': cotizacion()!.estado === 'RECHAZADO'
+          }" style="font-size: 0.9rem; padding: 0.3rem 0.8rem;">
+          {{ cotizacion()!.estado }}
+        </span>
+      </div>
+
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem;">
+        <div>
+          <p
+            style="font-size: 0.75rem; color: #6b7280; font-weight: 600; text-transform: uppercase; margin: 0 0 0.25rem 0;">
+            Proveedor</p>
+          <p style="font-size: 0.95rem; font-weight: 600; color: #111827; margin: 0;">{{
+            cotizacion()!.razon_social_proveedor }}</p>
+          <p style="font-size: 0.85rem; color: #4b5563; margin: 0;">RUC: {{ cotizacion()!.ruc_proveedor }}</p>
+
+          @if (proveedorDetalle()) {
+          <div style="margin-top: 0.75rem; font-size: 0.85rem; color: #4b5563;">
+            <p style="margin: 0;"><strong>Dirección:</strong> {{ proveedorDetalle()!.direccion }}</p>
+            <p style="margin: 0;"><strong>Teléfono:</strong> {{ proveedorDetalle()!.telefono || '-' }}</p>
+            <p style="margin: 0;"><strong>Email:</strong> {{ proveedorDetalle()!.correo || '-' }}</p>
+            <p style="margin: 0;"><strong>Categoría:</strong> {{ proveedorDetalle()!.categorias }}</p>
+          </div>
+          }
+        </div>
+
+        <div>
+          <p
+            style="font-size: 0.75rem; color: #6b7280; font-weight: 600; text-transform: uppercase; margin: 0 0 0.25rem 0;">
+            Solicitud de Pedido</p>
+          @if (cotizacion()!.cod_solicitud_pedido) {
+          <span class="code-badge" style="color: #e86b1a; background: rgba(232, 107, 26, 0.08); border-color: rgba(232, 107, 26, 0.2);">
+            {{ cotizacion()!.cod_solicitud_pedido }}
+          </span>
+          } @else {
+          <span class="text-muted" style="font-size: 0.9rem;">- No asociada -</span>
+          }
+        </div>
+      </div>
+    </section>
+
+    <!-- Detalles -->
+    <section class="table-card">
+      <h3
+        style="font-size: 1.05rem; font-weight: 600; color: #1f2937; margin: 0; padding: 1.25rem 1.5rem; border-bottom: 1px solid #e5e7eb;">
+        Materiales Cotizados
+      </h3>
+
+      <div class="table-responsive">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th class="col-index">#</th>
+              <th>Cód. Material</th>
+              <th>Descripción</th>
+              <th>Unidad</th>
+              <th style="text-align: right;">Cantidad</th>
+              <th style="text-align: right;">Precio Unit. (S/.)</th>
+              <th style="text-align: right;">Subtotal (S/.)</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (d of cotizacion()!.detalles; track d.id_cotizacion_detalle; let i = $index) {
+            <tr>
+              <td class="col-index text-muted">{{ i + 1 }}</td>
+              <td><span class="code-badge" style="color: #e86b1a; background: rgba(232, 107, 26, 0.08); border-color: rgba(232, 107, 26, 0.2);">{{ d.cod_materia }}</span>
+              </td>
+              <td style="font-weight: 500;">{{ d.descripcion_material }}</td>
+              <td>{{ unidadesMap()[d.id_material] || '-' }}</td>
+              <td style="text-align: right;">{{ d.cantidad }}</td>
+              <td style="text-align: right;">
+                @if (modoEdicion()) {
+                  <input type="number" [(ngModel)]="preciosEditados()[d.id_cotizacion_detalle]" class="inline-input" min="0" step="0.01" style="width: 100px; text-align: right;">
+                } @else {
+                  {{ d.precio_unitario | currency:'PEN':'symbol-narrow' }}
+                }
+              </td>
+              <td style="text-align: right; font-weight: 600;">
+                @if (modoEdicion()) {
+                  {{ (d.cantidad * (preciosEditados()[d.id_cotizacion_detalle] || 0)) | currency:'PEN':'symbol-narrow' }}
+                } @else {
+                  {{ d.subtotal | currency:'PEN':'symbol-narrow' }}
+                }
+              </td>
+            </tr>
+            }
+          </tbody>
+          <tfoot>
+            <tr style="background: #f9fafb;">
+              <td colspan="5"></td>
+              <td style="text-align: right; font-weight: 700; font-size: 1.1rem;">TOTAL COTIZADO:</td>
+              <td style="text-align: right; font-weight: 800; font-size: 1.15rem; color: #1a1a2e;">
+                {{ cotizacion()!.total | currency:' PEN':'symbol-narrow' }}
+              </td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </section>
+  </div>
+  }
+</div>

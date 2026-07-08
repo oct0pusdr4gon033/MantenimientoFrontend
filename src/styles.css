@@ -1,0 +1,50 @@
+@import "tailwindcss";
+
+/* Global Reset */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+}
+
+/* ── Global Print Styles ────────────────────────────────────── */
+@media print {
+  html, body {
+    overflow: visible !important;
+    height: auto !important;
+    width: auto !important;
+    background: #ffffff !important;
+  }
+
+  /* Hide navigation sidebar and layout headers */
+  app-sidebar,
+  .module-topbar,
+  header.module-topbar,
+  .no-print {
+    display: none !important;
+  }
+
+  /* Expand layout shell and main containers to print standard full width */
+  .module-shell {
+    display: block !important;
+    height: auto !important;
+    width: auto !important;
+    overflow: visible !important;
+    background: #ffffff !important;
+  }
+
+  .module-content {
+    display: block !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+
+  .module-main {
+    padding: 0 !important;
+    margin: 0 !important;
+    overflow: visible !important;
+    height: auto !important;
+  }
+}

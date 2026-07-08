@@ -1,0 +1,196 @@
+<div class="page-wrapper">
+  <header class="page-header">
+    <div class="page-title-group">
+      <button class="btn-ghost" (click)="cancelar()" style="padding: 0.4rem; border: none;">
+        <span class="material-symbols-outlined">arrow_back</span>
+      </button>
+      <span class="material-symbols-outlined page-icon" style="color: #3b82f6;">request_quote</span>
+      <div>
+        <h1 class="page-title">Nueva Cotización</h1>
+        <p class="page-subtitle">Registra los precios cotizados por un proveedor para los materiales requeridos.</p>
+      </div>
+    </div>
+  </header>
+
+  @if (errorMessage()) {
+    <div class="toast toast-error">
+      <span class="material-symbols-outlined">error</span>
+      <span>{{ errorMessage() }}</span>
+    </div>
+  }
+
+  <form [formGroup]="cotizacionForm" (ngSubmit)="guardar()" style="display: flex; flex-direction: column; gap: 1.5rem;">
+    <!-- Datos de Cabecera -->
+    <section class="table-card" style="padding: 1.5rem;">
+      <h2 style="font-size: 1.1rem; font-weight: 600; color: #1f2937; margin-top: 0; margin-bottom: 1rem; border-bottom: 1px solid #e5e7eb; padding-bottom: 0.5rem;">Datos Generales</h2>
+      
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem;">
+        
+        <!-- Proveedor -->
+        <div class="form-group">
+          <label>Proveedor *</label>
+          <select class="filter-select" formControlName="ruc_proveedor">
+            <option value="">-- Seleccionar Proveedor --</option>
+            @for (p of proveedores(); track p.ruc) {
+              <option [value]="p.ruc">{{ p.ruc }} - {{ p.razon_social }}</option>
+            }
+          </select>
+          @if (cotizacionForm.get('ruc_proveedor')?.touched && cotizacionForm.get('ruc_proveedor')?.invalid) {
+            <span class="form-error-alert"><span class="material-symbols-outlined">warning</span> Requerido.</span>
+          }
+        </div>
+
+        <!-- Solped -->
+        <div class="form-group">
+          <label>Solicitud de Pedido (Opcional)</label>
+          <select class="filter-select" formControlName="id_solicitud_pedido">
+            <option [value]="null">-- Cotización Manual Libre --</option>
+            @for (sol of solpedsActivas(); track sol.id_solicitud_pedido) {
+              <option [value]="sol.id_solicitud_pedido">{{ sol.cod_solicitud }}</option>
+            }
+          </select>
+          <p class="field-hint">Seleccione la SolPed activa o déjelo vacío para cotización manual.</p>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- Detalles de Materiales -->
+    <section class="table-card">
+      <div style="display: flex; justify-content: space-between; align-items: center; padding: 1rem 1.5rem; border-bottom: 1px solid #e5e7eb;">
+        <h2 style="font-size: 1.1rem; font-weight: 600; color: #1f2937; margin: 0;">Detalles de la Cotización</h2>
+        <button type="button" class="btn-primary" (click)="abrirModalMaterial()">
+          <span class="material-symbols-outlined">playlist_add</span>
+          Agregar Material
+        </button>
+      </div>
+
+      <div class="table-responsive" style="min-height: 200px;">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th class="col-index">#</th>
+              <th>Cód. Material</th>
+              <th>Descripción</th>
+              <th style="width: 150px;">Cantidad</th>
+              <th style="width: 150px;">Precio Unit. (S/.)</th>
+              <th style="width: 150px;">Subtotal (S/.)</th>
+              <th class="col-actions">Acciones</th>
+            </tr>
+          </thead>
+          <tbody formArrayName="detalles">
+            @for (detalle of detallesFormArray.controls; track $index; let i = $index) {
+              <tr [formGroupName]="i">
+                <td class="col-index text-muted">{{ i + 1 }}</td>
+                <td><span class="code-badge" style="color: #4f46e5; border-color: #4f46e5;">{{ detalle.get('cod_materia')?.value }}</span></td>
+                <td style="font-weight: 500;">{{ detalle.get('descripcion')?.value }}</td>
+                <td>
+                  <div class="input-wrapper" style="background: #fff;">
+                    <input type="number" formControlName="cantidad" step="0.01" min="0.01">
+                  </div>
+                </td>
+                <td>
+                  <div class="input-wrapper" style="background: #fff;">
+                    <input type="number" formControlName="precio_unitario" step="0.01" min="0">
+                  </div>
+                </td>
+                <td style="font-weight: 600;">
+                  {{ detalle.get('subtotal')?.value | currency:'PEN':'symbol-narrow' }}
+                </td>
+                <td class="col-actions">
+                  <button type="button" class="btn-icon btn-ghost" (click)="removerDetalle(i)" title="Eliminar material" style="color: #ef4444;">
+                    <span class="material-symbols-outlined">delete</span>
+                  </button>
+                </td>
+              </tr>
+            }
+          </tbody>
+          @if (detallesFormArray.length > 0) {
+            <tfoot>
+              <tr>
+                <td colspan="5" style="text-align: right; font-weight: 700; font-size: 1.1rem; padding-right: 1.5rem;">TOTAL:</td>
+                <td style="font-weight: 800; font-size: 1.1rem; color: #1a1a2e;">{{ totalCotizacion | currency:'PEN':'symbol-narrow' }}</td>
+                <td></td>
+              </tr>
+            </tfoot>
+          }
+        </table>
+
+        @if (detallesFormArray.length === 0) {
+          <div class="table-empty" style="padding: 2rem;">
+            <span class="material-symbols-outlined empty-icon" style="font-size: 2.5rem;">inventory_2</span>
+            <p>No hay materiales agregados a la cotización.</p>
+          </div>
+        }
+      </div>
+    </section>
+
+    <!-- Footer Actions -->
+    <div style="display: flex; justify-content: flex-end; gap: 1rem; margin-top: 0.5rem; margin-bottom: 2rem;">
+      <button type="button" class="btn-ghost" (click)="cancelar()">Cancelar</button>
+      <button type="submit" class="btn-primary" [disabled]="submitting() || cotizacionForm.invalid || detallesFormArray.length === 0">
+        @if (submitting()) { <span class="spinner-sm spinner-white"></span> }
+        Guardar Cotización
+      </button>
+    </div>
+  </form>
+</div>
+
+<!-- Modal Selección de Material -->
+@if (showMaterialModal()) {
+  <div class="modal-backdrop">
+    <div class="modal-card" style="max-width: 800px; height: 80vh; display: flex; flex-direction: column;">
+      <header class="modal-header">
+        <div class="modal-title-group">
+          <span class="material-symbols-outlined modal-icon">category</span>
+          <h2 class="modal-title">Seleccionar Material</h2>
+        </div>
+        <button class="modal-close" (click)="cerrarModalMaterial()">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </header>
+
+      <div class="modal-body" style="flex: 1; overflow: hidden; padding: 1rem 1.5rem; display: flex; flex-direction: column;">
+        
+        <div class="search-wrapper" style="margin-bottom: 1rem; flex-shrink: 0;">
+          <span class="material-symbols-outlined search-icon">search</span>
+          <input type="text" class="search-input" placeholder="Buscar material por código o descripción..." 
+            [value]="materialSearchQuery()" (input)="filtrarMateriales($event)">
+        </div>
+
+        <div class="table-responsive" style="flex: 1; border: 1px solid #e5e7eb; border-radius: 8px; overflow-y: auto;">
+          <table class="data-table">
+            <thead style="position: sticky; top: 0; z-index: 10;">
+              <tr>
+                <th>Código</th>
+                <th>Descripción</th>
+                <th>Unidad</th>
+                <th style="width: 100px;">Acción</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (m of materialesFiltrados(); track m.id_material) {
+                <tr>
+                  <td><span class="code-badge" style="color: #4b5563; border-color: #d1d5db;">{{ m.cod_materia }}</span></td>
+                  <td style="font-weight: 500;">{{ m.descripcion }}</td>
+                  <td>{{ m.nombre_unidad }}</td>
+                  <td>
+                    <button class="btn-primary" (click)="seleccionarMaterial(m)" style="padding: 0.3rem 0.8rem; font-size: 0.75rem;">
+                      Seleccionar
+                    </button>
+                  </td>
+                </tr>
+              }
+              @if (materialesFiltrados().length === 0) {
+                <tr>
+                  <td colspan="4" style="text-align: center; padding: 2rem; color: #6b7280;">No se encontraron materiales.</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+
+      </div>
+    </div>
+  </div>
+}

@@ -1,0 +1,270 @@
+<div class="page-wrapper mantenimiento-theme">
+  
+  <!-- ── Header Superior ────────────────────────────────────────── -->
+  <div class="page-header">
+    <div class="page-title-group">
+      <button class="btn-back" (click)="cancelar()" title="Regresar">
+        <span class="material-symbols-outlined">arrow_back</span>
+      </button>
+      <div>
+        <h1 class="page-title">Nuevo Vale de Repuestos y Materiales</h1>
+        <p class="page-subtitle">Registre una solicitud de materiales para una Orden de Trabajo o consumo libre</p>
+      </div>
+    </div>
+    <div class="header-actions">
+      <button class="btn-secondary" (click)="cancelar()" [disabled]="guardando()">Cancelar</button>
+      <button class="btn-primary" (click)="guardar()" [disabled]="guardando() || cargando() || materialesSeleccionados().length === 0">
+        @if (guardando()) {
+          <span class="spinner"></span> Guardando...
+        } @else {
+          <span class="material-symbols-outlined">save</span> Generar Vale
+        }
+      </button>
+    </div>
+  </div>
+
+  <!-- ── Notificaciones flotantes ────────────────────────────── -->
+  @if (mensajeError()) {
+    <div class="alert alert-danger">
+      <span class="material-symbols-outlined">error</span>
+      <span>{{ mensajeError() }}</span>
+    </div>
+  }
+  @if (mensajeExito()) {
+    <div class="alert alert-success">
+      <span class="material-symbols-outlined">check_circle</span>
+      <span>{{ mensajeExito() }}</span>
+    </div>
+  }
+
+  <!-- ── Contenedor Principal (2 Columnas) ───────────────────────── -->
+  @if (cargando()) {
+    <div class="loading-state">
+      <span class="spinner-large"></span>
+      <p>Cargando información general y catálogos...</p>
+    </div>
+  } @else {
+    <div class="form-container">
+
+      <!-- COLUMNA IZQUIERDA: Configuración y Datos del Vale -->
+      <div class="form-column">
+        
+        <!-- Card 1: Datos Generales -->
+        <div class="form-card">
+          <div class="card-header">
+            <span class="material-symbols-outlined card-icon">description</span>
+            <h2>Datos Generales</h2>
+          </div>
+
+          <div class="card-body">
+            <!-- Selector Tipo de Vale -->
+            <div class="input-group">
+              <label>Tipo de Solicitud</label>
+              <div class="type-selector">
+                <button type="button" class="type-btn" [class.active]="tipoVale() === 'OT'"
+                  (click)="setTipoVale('OT')">
+                  <span class="material-symbols-outlined">build_circle</span>
+                  <div class="type-info">
+                    <strong>VINCULADO A OT</strong>
+                    <span>Para mantenimiento específico</span>
+                  </div>
+                </button>
+                <button type="button" class="type-btn" [class.active]="tipoVale() === 'LIBRE'"
+                  (click)="setTipoVale('LIBRE')">
+                  <span class="material-symbols-outlined">folder_open</span>
+                  <div class="type-info">
+                    <strong>VALE LIBRE / GENERAL</strong>
+                    <span>Papelería, EPPs, consumo general</span>
+                  </div>
+                </button>
+              </div>
+            </div>
+
+            <!-- Selector Orden de Trabajo (solo si está vinculado) -->
+            @if (tipoVale() === 'OT') {
+              <div class="input-group">
+                <label for="id_ot">Orden de Trabajo Asociada *</label>
+                <select id="id_ot" [ngModel]="otSeleccionadaId()" (ngModelChange)="otSeleccionadaId.set($event)">
+                  <option [value]="null">-- Seleccione Orden de Trabajo --</option>
+                  @for (ot of otsDisponibles(); track ot.id_ot) {
+                    <option [value]="ot.id_ot">
+                      {{ ot.cod_ot }} - {{ ot.cod_equipo }} [{{ ot.tipo_ot }}]
+                    </option>
+                  }
+                </select>
+                @if (otsDisponibles().length === 0) {
+                  <span class="helper-text warning">
+                    No hay órdenes de trabajo activas disponibles que no tengan un vale asignado.
+                  </span>
+                }
+              </div>
+            }
+
+            <!-- Campo Solicitado Por (Lectura) -->
+            <div class="input-group">
+              <label for="solicitado_por">Solicitante (Responsable)</label>
+              <input 
+                type="text" 
+                id="solicitado_por" 
+                [ngModel]="solicitadoPor()" 
+                readonly 
+                class="read-only-input"
+              />
+              <span class="helper-text">Nombre de usuario extraído de la sesión activa</span>
+            </div>
+
+            <!-- Observaciones -->
+            <div class="input-group">
+              <label for="obs">Observaciones o Justificación</label>
+              <textarea 
+                id="obs" 
+                [ngModel]="observaciones()" 
+                (ngModelChange)="observaciones.set($event)"
+                placeholder="Escriba aquí los detalles sobre el uso de los materiales..." 
+                rows="4"
+              ></textarea>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- COLUMNA DERECHA: Materiales y Selección -->
+      <div class="form-column">
+        
+        <!-- Card 2: Agregar Materiales -->
+        <div class="form-card">
+          <div class="card-header">
+            <span class="material-symbols-outlined card-icon">inventory_2</span>
+            <h2>Selección de Repuestos y Materiales</h2>
+          </div>
+
+          <div class="card-body">
+            
+            <div class="material-adder-section">
+              <!-- Buscador de material con sugerencias -->
+              <div class="input-group relative">
+                <label>Buscar Repuesto / Material</label>
+                <div class="search-input-wrapper">
+                  <span class="material-symbols-outlined search-icon-input">search</span>
+                  <input 
+                    type="text" 
+                    placeholder="Escriba código o nombre de repuesto..." 
+                    [(ngModel)]="busquedaMaterial"
+                    class="material-search-field"
+                  />
+                </div>
+
+                <!-- Lista de resultados sugeridos -->
+                @if (busquedaMaterial().trim().length >= 1) {
+                  <div class="autocomplete-dropdown">
+                    @if (materialesFiltrados().length === 0) {
+                      <div class="no-results">No se encontraron materiales</div>
+                    } @else {
+                      @for (m of materialesFiltrados().slice(0, 5); track m.id_material) {
+                        <div class="dropdown-item" (click)="seleccionarMaterial(m.id_material)">
+                          <span class="item-code">{{ m.cod_materia }}</span>
+                          <span class="item-desc">{{ m.descripcion }}</span>
+                          <span class="item-stock" [class.low-stock]="m.stock <= 0">Stock: {{ m.stock }}</span>
+                        </div>
+                      }
+                    }
+                  </div>
+                }
+              </div>
+
+              <!-- Detalle del material seleccionado temporalmente -->
+              @if (materialSeleccionado()) {
+                <div class="selected-material-info-card">
+                  <div class="selected-material-header">
+                    <span class="badge-code">{{ materialSeleccionado()?.cod_materia }}</span>
+                    <strong>{{ materialSeleccionado()?.descripcion }}</strong>
+                  </div>
+                  <div class="selected-material-stats">
+                    <span>Unidad: <span class="stat-val">{{ materialSeleccionado()?.nombre_unidad }}</span></span>
+                    <span>Stock Disponible: <span class="stat-val font-bold" [class.text-danger]="(materialSeleccionado()?.stock || 0) <= 0">{{ materialSeleccionado()?.stock }}</span></span>
+                  </div>
+                  
+                  <div class="quantity-add-row">
+                    <div class="input-group no-margin">
+                      <label for="cant_sel">Cantidad a Solicitar</label>
+                      <input 
+                        type="number" 
+                        id="cant_sel" 
+                        [(ngModel)]="cantidadASeleccionar" 
+                        min="1" 
+                        step="1"
+                      />
+                    </div>
+                    <button type="button" class="btn-add-item" (click)="agregarMaterial()">
+                      <span class="material-symbols-outlined">add_shopping_cart</span>
+                      Agregar
+                    </button>
+                  </div>
+                </div>
+              }
+            </div>
+
+            <!-- Tabla de Materiales Seleccionados -->
+            <div class="selected-materials-table-wrapper">
+              <h3>Ítems Solicitados</h3>
+              @if (materialesSeleccionados().length === 0) {
+                <div class="empty-list-indicator">
+                  <span class="material-symbols-outlined">shopping_cart</span>
+                  <p>Aún no ha agregado repuestos a este vale.</p>
+                </div>
+              } @else {
+                <table class="selected-materials-table">
+                  <thead>
+                    <tr>
+                      <th>Código</th>
+                      <th>Descripción</th>
+                      <th>Stock Disp.</th>
+                      <th class="col-qty">Cant. Solicitada</th>
+                      <th class="col-delete"></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (item of materialesSeleccionados(); track item.material.id_material) {
+                      <tr>
+                        <td>
+                          <span class="mono-code">{{ item.material.cod_materia }}</span>
+                        </td>
+                        <td>
+                          <div class="desc-cell">
+                            <strong>{{ item.material.descripcion }}</strong>
+                            <span class="unit-subtext">Unidad: {{ item.material.nombre_unidad }}</span>
+                          </div>
+                        </td>
+                        <td>
+                          <span [class.text-danger]="item.material.stock <= 0">{{ item.material.stock }}</span>
+                        </td>
+                        <td>
+                          <input 
+                            type="number" 
+                            [ngModel]="item.cantidad" 
+                            (ngModelChange)="actualizarCantidadItem(item.material.id_material, $event)"
+                            min="1" 
+                            class="table-qty-input"
+                          />
+                        </td>
+                        <td>
+                          <button type="button" class="btn-delete-item" (click)="eliminarMaterial(item.material.id_material)">
+                            <span class="material-symbols-outlined">delete</span>
+                          </button>
+                        </td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              }
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  }
+</div>

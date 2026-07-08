@@ -1,0 +1,165 @@
+<div class="page-wrapper">
+
+  <!-- ── Header y Botón Volver ──────────────────────────────── -->
+  <div class="page-header">
+    <div class="page-title-group">
+      <button class="btn-back" (click)="volver()" title="Volver atrás" style="margin-right: 15px;">
+        <span class="material-symbols-outlined">arrow_back</span>
+      </button>
+      <span class="material-symbols-outlined page-icon">info</span>
+      <div>
+        <h1 class="page-title">Detalle del Registro</h1>
+        <p class="page-subtitle">Código de transacción: {{ codigoHistorial }}</p>
+      </div>
+    </div>
+  </div>
+
+  @if (cargando()) {
+  <div class="table-card">
+    <div class="table-loader">
+      <span class="spinner-lg"></span>
+      <p>Cargando información a detalle...</p>
+    </div>
+  </div>
+  } @else if (mensajeError) {
+  <div class="toast toast-error" style="margin-bottom: 20px;">
+    <span class="material-symbols-outlined">error</span>
+    {{ mensajeError }}
+  </div>
+  } @else {
+
+  <!-- ── Layout en Grid (Tarjetas de Info) ──────────────────── -->
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 24px; margin-bottom: 24px;">
+
+    <!-- Tarjeta del Registro Base -->
+    <div class="table-card" style="padding: 24px;">
+      <h3 style="margin-top: 0; color: #1e293b; display: flex; align-items: center; gap: 8px;">
+        <span class="material-symbols-outlined" style="color: #3b82f6;">speed</span>
+        Datos de Lectura
+      </h3>
+      <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 15px 0;">
+      
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+        <div>
+          <span class="text-muted" style="font-size: 12px; display: block;">Lectura Actual</span>
+          <strong style="font-size: 18px; color: #0f172a;">{{ registroActual()?.lectura_actual | number:'1.0-1' }} h</strong>
+        </div>
+        <div>
+          <span class="text-muted" style="font-size: 12px; display: block;">Horas Operadas</span>
+          <strong style="font-size: 18px; color: #10b981;">+{{ registroActual()?.horas_operadas | number:'1.0-1' }} h</strong>
+        </div>
+        <div>
+          <span class="text-muted" style="font-size: 12px; display: block;">Fecha de Registro</span>
+          <span style="color: #475569;">{{ registroActual()?.fecha_registro | date:'dd/MM/yyyy HH:mm' }}</span>
+        </div>
+        <div>
+          <span class="text-muted" style="font-size: 12px; display: block;">Observaciones</span>
+          <span style="color: #475569;">{{ registroActual()?.observaciones || 'Sin novedades' }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tarjeta del Equipo -->
+    <div class="table-card" style="padding: 24px;">
+      <h3 style="margin-top: 0; color: #1e293b; display: flex; align-items: center; gap: 8px;">
+        <span class="material-symbols-outlined" style="color: #3b82f6;">construction</span>
+        Ficha del Equipo
+      </h3>
+      <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 15px 0;">
+      
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+        <div>
+          <span class="text-muted" style="font-size: 12px; display: block;">Código y Placa</span>
+          <strong style="color: #0f172a;">{{ equipo()?.codEqp }} / {{ equipo()?.placaEqp || 'S/P' }}</strong>
+        </div>
+        <div>
+          <span class="text-muted" style="font-size: 12px; display: block;">Modelo y Marca</span>
+          <span style="color: #475569;">{{ equipo()?.nombreModelo }} - {{ equipo()?.nombreMarca }}</span>
+        </div>
+        <div>
+          <span class="text-muted" style="font-size: 12px; display: block;">Área de Operación</span>
+          <span style="color: #475569;">{{ equipo()?.nombreArea }}</span>
+        </div>
+        <div>
+          <span class="text-muted" style="font-size: 12px; display: block;">Horómetro Total Acumulado</span>
+          <strong style="color: #f59e0b;">{{ equipo()?.horometroActual | number:'1.0-1' }} h</strong>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tarjeta del Conductor -->
+    <div class="table-card" style="padding: 24px;">
+      <h3 style="margin-top: 0; color: #1e293b; display: flex; align-items: center; gap: 8px;">
+        <span class="material-symbols-outlined" style="color: #3b82f6;">person</span>
+        Conductor / Empleado
+      </h3>
+      <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 15px 0;">
+      
+      <div style="display: grid; grid-template-columns: 1fr; gap: 15px;">
+        <div>
+          <span class="text-muted" style="font-size: 12px; display: block;">Nombre Completo</span>
+          <strong style="color: #0f172a;">{{ conductor()?.nombre }} {{ conductor()?.apellido1 }} {{ conductor()?.apellido2 }}</strong>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr;">
+          <div>
+            <span class="text-muted" style="font-size: 12px; display: block;">DNI</span>
+            <span style="color: #475569;">{{ conductor()?.dni_empleado }}</span>
+          </div>
+          <div>
+            <span class="text-muted" style="font-size: 12px; display: block;">Código Empleado</span>
+            <span class="code-badge">{{ conductor()?.codigo_empleado }}</span>
+          </div>
+        </div>
+        <div>
+          <span class="text-muted" style="font-size: 12px; display: block;">Rol Asignado</span>
+          <span class="estado-badge activo">{{ conductor()?.nombreRol }}</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ── Tabla de Historial Total del Equipo ──────────────────── -->
+  <div class="table-card">
+    <div style="padding: 20px 24px; border-bottom: 1px solid #e2e8f0;">
+      <h3 style="margin: 0; color: #1e293b; display: flex; align-items: center; gap: 8px;">
+        <span class="material-symbols-outlined">history</span>
+        Historial Completo de este Equipo
+      </h3>
+    </div>
+
+    <div class="table-responsive">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th class="col-index">#</th>
+            <th>Transacción</th>
+            <th>Fecha</th>
+            <th>Lectura Anterior</th>
+            <th>Lectura Actual</th>
+            <th>Horas Operadas</th>
+            <th>Observaciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (historial of historialEquipo(); track historial.codigo_hist; let i = $index) {
+          <tr [style.background]="historial.codigo_hist === codigoHistorial ? '#f0fdf4' : ''">
+            <td class="col-index text-muted">{{ i + 1 }}</td>
+            <td>
+              <span class="code-badge">{{ historial.codigo_hist }}</span>
+            </td>
+            <td class="text-muted-sm">{{ historial.fecha_registro | date:'dd/MM/yyyy HH:mm' }}</td>
+            <td class="text-muted-sm">{{ historial.lectura_anterior | number:'1.0-1' }} h</td>
+            <td class="text-muted-sm" style="color: #0f172a; font-weight: 500;">{{ historial.lectura_actual | number:'1.0-1' }} h</td>
+            <td class="text-muted-sm text-success">+{{ historial.horas_operadas | number:'1.0-1' }} h</td>
+            <td class="text-muted-sm">{{ historial.observaciones || '—' }}</td>
+          </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  }
+
+</div>

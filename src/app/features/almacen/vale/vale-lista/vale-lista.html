@@ -1,0 +1,174 @@
+<div class="page-wrapper mantenimiento-theme">
+  
+  <!-- ── Header ─────────────────────────────────────────────── -->
+  <div class="page-header">
+    <div class="page-title-group">
+      <span class="material-symbols-outlined page-icon">
+        {{ tabActivo() === 'PENDIENTE' ? 'receipt_long' : 'local_shipping' }}
+      </span>
+      <div>
+        <h1 class="page-title">
+          {{ tabActivo() === 'PENDIENTE' ? 'Vales de Pedidos de Repuestos' : 'Notas de Salida de Almacén' }}
+        </h1>
+        <p class="page-subtitle">
+          {{ tabActivo() === 'PENDIENTE' 
+             ? 'Gestión de vales de repuestos y materiales pendientes de despacho' 
+             : 'Historial de notas de salida y materiales despachados del almacén' }}
+        </p>
+      </div>
+    </div>
+    
+    <!-- Botón para Crear Vale (Solo visible en Mantenimiento o Almacén) -->
+    <button class="btn-primary" (click)="abrirCrear()">
+      <span class="material-symbols-outlined">add</span>
+      Nuevo Vale
+    </button>
+  </div>
+
+  <!-- ── Pestañas (Tabs) ────────────────────────────────────── -->
+  <div class="tabs-container">
+    <button 
+      class="tab-btn" 
+      [class.active]="tabActivo() === 'PENDIENTE'" 
+      (click)="setTab('PENDIENTE')">
+      <span class="material-symbols-outlined">pending_actions</span>
+      Vales Pendientes
+    </button>
+    <button 
+      class="tab-btn" 
+      [class.active]="tabActivo() === 'DESPACHADO'" 
+      (click)="setTab('DESPACHADO')">
+      <span class="material-symbols-outlined">task_alt</span>
+      Notas de Salida (Despachados)
+    </button>
+  </div>
+
+  <!-- ── Filtros ─────────────────────────────────────────────── -->
+  <div class="filter-bar">
+    <div class="filter-controls">
+      <!-- Buscador -->
+      <div class="search-wrapper">
+        <span class="material-symbols-outlined search-icon">search</span>
+        <input
+          class="search-input"
+          type="text"
+          placeholder="Buscar por código, solicitante o OT..."
+          [(ngModel)]="filtroBusqueda"
+          (keyup.enter)="buscar()"
+        />
+        @if (filtroBusqueda()) {
+          <button class="clear-btn" (click)="filtroBusqueda.set(''); buscar()">
+            <span class="material-symbols-outlined">close</span>
+          </button>
+        }
+      </div>
+
+      <!-- Filtro Rango de Fechas -->
+      <div class="date-filter-group">
+        <div class="input-date-wrapper">
+          <label>Desde</label>
+          <input type="date" [(ngModel)]="filtroFechaInicio" (change)="buscar()" />
+        </div>
+        <div class="input-date-wrapper">
+          <label>Hasta</label>
+          <input type="date" [(ngModel)]="filtroFechaFin" (change)="buscar()" />
+        </div>
+      </div>
+
+      @if (filtroBusqueda() || filtroFechaInicio() || filtroFechaFin()) {
+        <button class="btn-ghost btn-sm" (click)="limpiarFiltros()">
+          <span class="material-symbols-outlined">filter_alt_off</span>
+          Limpiar
+        </button>
+      }
+    </div>
+    <span class="badge-count">{{ vales().length }} registro(s)</span>
+  </div>
+
+  <!-- ── Mensaje de Error ────────────────────────────────────── -->
+  @if (mensajeError()) {
+    <div class="toast toast-error">
+      <span class="material-symbols-outlined">error</span>
+      {{ mensajeError() }}
+    </div>
+  }
+
+  <!-- ── Tabla ───────────────────────────────────────────────── -->
+  <div class="table-card">
+    @if (cargando()) {
+      <div class="table-loader">
+        <div class="spinner-lg"></div>
+        <p>Cargando información...</p>
+      </div>
+    } @else if (vales().length === 0) {
+      <div class="table-empty">
+        <span class="material-symbols-outlined empty-icon">
+          {{ tabActivo() === 'PENDIENTE' ? 'receipt_long' : 'inventory_2' }}
+        </span>
+        <p>No se encontraron vales registrados.</p>
+      </div>
+    } @else {
+      <div class="table-responsive">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Código Vale</th>
+              <th>OT Asociada</th>
+              <th>Solicitado Por</th>
+              <th>Fecha Creación</th>
+              @if (tabActivo() === 'DESPACHADO') {
+                <th>Despachado Por</th>
+                <th>Fecha Despacho</th>
+              }
+              <th>Materiales</th>
+              <th>Estado</th>
+              <th class="col-actions">Acción</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (v of vales(); track v.id_vale) {
+              <tr>
+                <td>
+                  <span class="code-badge">{{ v.cod_vale }}</span>
+                </td>
+                <td>
+                  @if (v.cod_ot) {
+                    <span class="ot-link">{{ v.cod_ot }}</span>
+                  } @else {
+                    <span class="text-muted italic">Manual / Sin OT</span>
+                  }
+                </td>
+                <td>{{ v.solicitado_por }}</td>
+                <td class="text-muted">{{ formatearFecha(v.fecha_creacion) }}</td>
+                @if (tabActivo() === 'DESPACHADO') {
+                  <td>{{ v.despachado_por || 'N/A' }}</td>
+                  <td class="text-muted">{{ formatearFecha(v.fecha_despacho) }}</td>
+                }
+                <td>
+                  <span class="material-count">
+                    {{ v.materiales.length }} ítem(s)
+                  </span>
+                </td>
+                <td>
+                  <span class="estado-pill" [class.estado-pendiente]="v.estado === 'PENDIENTE'" [class.estado-activa]="v.estado === 'DESPACHADO'">
+                    {{ v.estado }}
+                  </span>
+                </td>
+                <td>
+                  <div class="actions-group">
+                    <button class="btn-icon btn-detail" title="Ver Detalles" (click)="abrirDetalle(v.id_vale)">
+                      <span class="material-symbols-outlined">
+                        {{ (isAlmacen() && v.estado === 'PENDIENTE') ? 'local_shipping' : 'visibility' }}
+                      </span>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </div>
+
+</div>

@@ -1,0 +1,71 @@
+<div class="login-wrapper">
+
+  <!-- Panel izquierdo: formulario -->
+  <div class="login-panel">
+
+    <div class="login-brand">
+      <span class="brand-tag"></span>
+      <h1 class="brand-title">Sistema de Mantenimiento</h1>
+      <p class="brand-subtitle">Gestión de Mantenimiento</p>
+    </div>
+
+    <form class="login-form" (ngSubmit)="ingresar()" autocomplete="off">
+
+      <div class="form-group">
+        <label for="email">Correo Electrónico</label>
+        <div class="input-wrapper">
+          <span class="input-icon material-symbols-outlined">mail</span>
+          <input id="email" type="email" [(ngModel)]="email" name="email" placeholder="Ingrese su correo electrónico"
+            autocomplete="email" />
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="contrasena">Contraseña</label>
+        <div class="input-wrapper">
+          <span class="input-icon material-symbols-outlined">lock</span>
+          <input id="contrasena" [type]="mostrarContrasena ? 'text' : 'password'" [(ngModel)]="contrasena"
+            name="contrasena" placeholder="Ingrese su contraseña" autocomplete="current-password" />
+          <button type="button" class="toggle-eye" (click)="toggleContrasena()">
+            <span class="material-symbols-outlined">
+              {{ mostrarContrasena ? 'visibility_off' : 'visibility' }}
+            </span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Mensaje de error -->
+      @if (errorMensaje) {
+      <div class="error-alert">
+        <span class="material-symbols-outlined error-icon">error</span>
+        <span>{{ errorMensaje }}</span>
+      </div>
+      }
+
+      <button type="submit" class="btn-ingresar" [disabled]="cargando">
+        @if (cargando) {
+        <span class="spinner"></span>
+        <span>Verificando...</span>
+        } @else {
+        <span class="material-symbols-outlined">login</span>
+        <span>INGRESAR AL SISTEMA</span>
+        }
+      </button>
+
+    </form>
+
+    <footer class="login-footer">
+      <span>© 2025 Horus Systems</span>
+      <a href="#">Soporte</a>
+      <a href="#">Privacidad</a>
+    </footer>
+
+  </div>
+
+  <!-- Panel derecho: imagen -->
+  <div class="login-image-panel">
+    <img src="login_image.jpeg" alt="Maquinaria industrial" class="bg-image" />
+    <div class="image-overlay"></div>
+  </div>
+
+</div>

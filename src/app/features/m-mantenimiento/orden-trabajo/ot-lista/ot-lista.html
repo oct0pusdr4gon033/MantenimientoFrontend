@@ -1,0 +1,182 @@
+<div class="page-wrapper">
+
+  <!-- ── Header ─────────────────────────────────────────────── -->
+  <div class="page-header">
+    <div class="page-title-group">
+      <span class="material-symbols-outlined page-icon">engineering</span>
+      <div>
+        <h1 class="page-title">Órdenes de Trabajo</h1>
+        <p class="page-subtitle">Gestión de OTs preventivas y correctivas de mantenimiento</p>
+      </div>
+    </div>
+    <button class="btn-primary" id="btn-nueva-ot" (click)="abrirCrear()">
+      <span class="material-symbols-outlined">add</span>
+      Nueva OT Manual
+    </button>
+  </div>
+
+  <!-- ── Toasts ──────────────────────────────────────────────── -->
+  @if (mensajeExito()) {
+    <div class="toast toast-success">
+      <span class="material-symbols-outlined">check_circle</span>
+      {{ mensajeExito() }}
+    </div>
+  }
+  @if (mensajeError()) {
+    <div class="toast toast-error">
+      <span class="material-symbols-outlined">error</span>
+      {{ mensajeError() }}
+    </div>
+  }
+
+  <!-- ── Filtros ─────────────────────────────────────────────── -->
+  <div class="filter-bar">
+    <div class="filter-controls">
+      <div class="search-wrapper">
+        <span class="material-symbols-outlined search-icon">search</span>
+        <input
+          class="search-input"
+          type="text"
+          placeholder="Buscar por OT, placa, flota..."
+          [value]="filtroBusqueda()"
+          (input)="filtroBusqueda.set($any($event.target).value)"
+          id="input-busqueda-ot"
+        />
+        @if (filtroBusqueda()) {
+          <button class="clear-btn" (click)="filtroBusqueda.set('')">
+            <span class="material-symbols-outlined">close</span>
+          </button>
+        }
+      </div>
+
+      <div class="select-wrapper">
+        <select class="filter-select" [value]="filtroEstado()"
+          (change)="filtroEstado.set($any($event.target).value)" id="select-estado-ot">
+          <option value="TODOS">Todos los estados</option>
+          <option value="PENDIENTE">Pendiente</option>
+          <option value="ACTIVA">Activa</option>
+          <option value="EN_REVISION">En Revisión</option>
+          <option value="CERRADA">Cerrada</option>
+          <option value="INACTIVA">Inactiva</option>
+        </select>
+      </div>
+
+      <div class="select-wrapper">
+        <select class="filter-select" [value]="filtroTipo()"
+          (change)="filtroTipo.set($any($event.target).value)" id="select-tipo-ot">
+          <option value="TODOS">Todos los tipos</option>
+          <option value="PREVENTIVA">Preventiva</option>
+          <option value="CORRECTIVA">Correctiva</option>
+        </select>
+      </div>
+
+      @if (filtroBusqueda() || filtroEstado() !== 'TODOS' || filtroTipo() !== 'TODOS') {
+        <button class="btn-ghost btn-sm" (click)="limpiarFiltros()">
+          <span class="material-symbols-outlined">filter_alt_off</span>
+          Limpiar
+        </button>
+      }
+    </div>
+    <span class="badge-count">{{ ordenesFiltradas().length }} resultado(s)</span>
+  </div>
+
+  <!-- ── Tabla ───────────────────────────────────────────────── -->
+  <div class="table-card">
+    @if (cargando()) {
+      <div class="table-loader">
+        <div class="spinner-lg"></div>
+        <p>Cargando órdenes de trabajo...</p>
+      </div>
+    } @else if (ordenesFiltradas().length === 0) {
+      <div class="table-empty">
+        <span class="material-symbols-outlined empty-icon">engineering</span>
+        <p>No se encontraron órdenes de trabajo.</p>
+      </div>
+    } @else {
+      <div class="table-responsive">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Código OT</th>
+              <th>Tipo</th>
+              <th>Equipo / Placa</th>
+              <th>Flota</th>
+              <th>PMs</th>
+              <th>Horómetro</th>
+              <th>Generación</th>
+              <th>Estado</th>
+              <th>Fecha Creación</th>
+              <th class="col-actions">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (ot of ordenesFiltradas(); track ot.id_ot) {
+              <tr>
+                <td>
+                  <span class="cod-ot">{{ ot.cod_ot }}</span>
+                </td>
+                <td>
+                  <span class="tipo-badge" [class.tipo-preventiva]="ot.tipo_ot === 'PREVENTIVA'"
+                        [class.tipo-correctiva]="ot.tipo_ot === 'CORRECTIVA'">
+                    <span class="material-symbols-outlined tipo-icon">
+                      {{ ot.tipo_ot === 'PREVENTIVA' ? 'schedule' : 'build_circle' }}
+                    </span>
+                    {{ ot.tipo_ot === 'PREVENTIVA' ? 'Preventiva' : 'Correctiva' }}
+                  </span>
+                </td>
+                <td>
+                  <div class="equipo-cell">
+                    <span class="equipo-placa">{{ ot.placa_equipo }}</span>
+                    <span class="equipo-cod text-muted">{{ ot.cod_equipo }}</span>
+                  </div>
+                </td>
+                <td>{{ ot.nombre_flota ?? '-' }}</td>
+                <td>
+                  <div class="pms-chips">
+                    @for (pm of ot.pms_incluidos; track pm.id_detalle_estrg) {
+                      <span class="pm-chip">{{ pm.tipo_pm }}</span>
+                    }
+                  </div>
+                </td>
+                <td>
+                  <span class="horometro-val">{{ ot.horometro_al_momento | number:'1.0-1' }} H</span>
+                </td>
+                <td>
+                  <span class="gen-badge" [class.gen-auto]="ot.forma_generacion === 'AUTO'"
+                        [class.gen-manual]="ot.forma_generacion === 'MANUAL'">
+                    @if (ot.forma_generacion === 'AUTO') {
+                      <svg class="gen-icon" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M19 9h-6l2.3-9H5L3.7 9h6L7.4 24 19 9z"/>
+                      </svg>
+                      Auto
+                    } @else {
+                      <svg class="gen-icon" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M10.5 5a1.5 1.5 0 0 0-3 0v7.58l-.66-.45a1.5 1.5 0 0 0-2 .23c-.5.54-.45 1.4.1 1.9l4.5 4.16C10.1 19 11 20 12.1 20h5.4c1.4 0 2.5-1.1 2.5-2.5V9.5a1.5 1.5 0 0 0-3 0V11h-1V7.5a1.5 1.5 0 0 0-3 0V11h-1V6.5a1.5 1.5 0 0 0-3 0V5z"/>
+                      </svg>
+                      Manual
+                    }
+                  </span>
+                </td>
+                <td>
+                  <span class="estado-pill {{ getEstadoClass(ot.estado) }}">
+                    {{ getEstadoLabel(ot.estado) }}
+                  </span>
+                </td>
+                <td class="text-muted">{{ formatearFecha(ot.fecha_creacion) }}</td>
+                <td>
+                  <div class="actions-group">
+                    <button class="btn-icon btn-detail" title="Ver detalle"
+                      (click)="abrirDetalle(ot.id_ot)" id="btn-detalle-ot-{{ ot.id_ot }}">
+                      <span class="material-symbols-outlined">visibility</span>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </div>
+
+</div>

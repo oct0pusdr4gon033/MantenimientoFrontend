@@ -1,0 +1,186 @@
+<div class="page-wrapper">
+
+  <!-- ── Header de página ──────────────────────────────────── -->
+  <div class="page-header">
+    <div class="page-title-group">
+      <span class="material-symbols-outlined page-icon">assignment_turned_in</span>
+      <div>
+        <h1 class="page-title">Planes de Mantenimiento</h1>
+        <p class="page-subtitle">Plantillas maestras y planificación de mantenimiento por estrategias</p>
+      </div>
+    </div>
+    <button class="btn-primary" (click)="abrirCrear()">
+      <span class="material-symbols-outlined">add</span>
+      Nuevo Plan de Mantenimiento
+    </button>
+  </div>
+
+  <!-- ── Toast notificaciones ──────────────────────────────── -->
+  @if (mensajeExito()) {
+  <div class="toast toast-success">
+    <span class="material-symbols-outlined">check_circle</span>
+    {{ mensajeExito() }}
+  </div>
+  }
+  @if (mensajeError()) {
+  <div class="toast toast-error">
+    <span class="material-symbols-outlined">error</span>
+    {{ mensajeError() }}
+  </div>
+  }
+
+  <!-- ── Barra de filtros ───────────────────────────────────── -->
+  <div class="filter-bar">
+    <div class="filter-controls">
+      <div class="search-wrapper">
+        <span class="material-symbols-outlined search-icon">search</span>
+        <input id="filtro-busqueda" type="text" class="search-input" 
+          placeholder="Buscar por estrategia, fecha, id..."
+          [value]="filtroBusqueda()" 
+          (input)="onFiltroChange($any($event.target).value)" />
+        @if (filtroBusqueda()) {
+        <button class="clear-btn" (click)="limpiarFiltro()" title="Limpiar búsqueda">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+        }
+      </div>
+
+      <div class="select-wrapper">
+        <select class="filter-select" (change)="onEstadoFiltroChange($event)" [value]="estadoFiltro()">
+          <option value="TODOS">Todos los estados</option>
+          <option value="ACTIVO">Activos</option>
+          <option value="INACTIVO">Inactivos</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="filter-stats">
+      <span class="badge-count">{{ planesFiltrados().length }} plan(es)</span>
+    </div>
+  </div>
+
+  <!-- ── Tabla ─────────────────────────────────────────────── -->
+  <div class="table-card">
+
+    @if (cargando()) {
+    <div class="table-loader">
+      <span class="spinner-lg"></span>
+      <p>Cargando planes de mantenimiento...</p>
+    </div>
+    } @else if (planesFiltrados().length === 0) {
+    <div class="table-empty">
+      <span class="material-symbols-outlined empty-icon">assignment_late</span>
+      <p>No se encontraron planes de mantenimiento.</p>
+      @if (filtroBusqueda() || estadoFiltro() !== 'TODOS') {
+      <button class="btn-ghost" (click)="limpiarFiltro()">Limpiar filtros</button>
+      } @else {
+      <button class="btn-primary" (click)="abrirCrear()">Crear primer plan</button>
+      }
+    </div>
+    } @else {
+    <div class="table-responsive">
+      <table class="data-table">
+        <thead>
+          <tr>
+
+            <th>Estrategia Asociada</th>
+            <th>Nivel(es) PM</th>
+            <th>Total Actividades</th>
+            <th>Fecha de Creación</th>
+            <th>Estado</th>
+            <th class="col-actions">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (plan of planesFiltrados(); track plan.id_plan_mant) {
+          <tr>
+
+            <td>
+              <div class="strategy-info">
+                <span class="strategy-code">{{ plan.estrategia?.cod_estrategia }} - {{ plan.estrategia?.titulo_estrategia }}</span>
+              </div>
+            </td>
+            <td>
+              <span class="threshold-badge" style="background-color: #f8fafc; color: #0f172a; border-color: #cbd5e1; font-weight: 700;">
+                {{ obtenerPmsIncluidos(plan) }}
+              </span>
+            </td>
+            <td>
+              <span class="system-badge">{{ plan.actividades.length || 0 }} act.</span>
+            </td>
+            <td class="text-muted">{{ formatearFecha(plan.fecha_creacion) }}</td>
+            <td>
+              <span class="status-indicator" [class.status-active]="plan.estado" [class.status-inactive]="!plan.estado">
+                {{ plan.estado ? 'Activo' : 'Inactivo' }}
+              </span>
+            </td>
+            <td class="col-actions">
+              <div class="actions-group">
+                <button class="btn-icon btn-detail" (click)="abrirDetalle(plan.id_plan_mant)" title="Ver Detalle">
+                  <span class="material-symbols-outlined">visibility</span>
+                </button>
+                <button class="btn-icon btn-edit" (click)="abrirEditar(plan.id_plan_mant)" title="Editar Plan">
+                  <span class="material-symbols-outlined">edit</span>
+                </button>
+                <button class="btn-icon btn-delete" (click)="solicitarEliminacion(plan)" title="Eliminar Plan">
+                  <span class="material-symbols-outlined">delete</span>
+                </button>
+              </div>
+            </td>
+          </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    }
+
+  </div>
+
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- Modal de Confirmación de Eliminación                     -->
+<!-- ═══════════════════════════════════════════════════════ -->
+@if (planParaEliminar()) {
+<div class="modal-backdrop" (click)="cerrarConfirmacion()">
+  <div class="modal-card modal-sm" (click)="$event.stopPropagation()">
+
+    <div class="modal-header">
+      <div class="modal-title-group">
+        <span class="material-symbols-outlined modal-icon modal-icon-danger">warning</span>
+        <h2 class="modal-title">Confirmar Eliminación</h2>
+      </div>
+      <button class="modal-close" (click)="cerrarConfirmacion()">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+
+    <div class="modal-body">
+      <p class="confirm-text">
+        ¿Está seguro que desea eliminar el plan de mantenimiento 
+        <code>#{{ planParaEliminar()?.id_plan_mant }}</code> para la estrategia 
+        <strong>{{ planParaEliminar()?.estrategia?.cod_estrategia }}</strong>?
+      </p>
+      <p class="confirm-warning">
+        Esta acción es permanente y eliminará todas las actividades y personal asociados a este plan.
+      </p>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn-ghost" (click)="cerrarConfirmacion()" [disabled]="eliminando()">
+        Cancelar
+      </button>
+      <button class="btn-danger" (click)="confirmarEliminar()" [disabled]="eliminando()">
+        @if (eliminando()) {
+        <span class="spinner-sm spinner-white"></span>
+        Eliminando...
+        } @else {
+        <span class="material-symbols-outlined">delete</span>
+        Eliminar Plan
+        }
+      </button>
+    </div>
+
+  </div>
+</div>
+}

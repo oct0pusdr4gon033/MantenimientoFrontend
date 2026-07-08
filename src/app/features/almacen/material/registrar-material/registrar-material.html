@@ -1,0 +1,301 @@
+<div class="page-wrapper">
+
+  <!-- ── Header de página ──────────────────────────────────── -->
+  <div class="page-header">
+    <div class="page-title-group">
+      <span class="material-symbols-outlined page-icon">inventory</span>
+      <div>
+        <h1 class="page-title">Registro de Materiales</h1>
+        <p class="page-subtitle">Gestión y administración del catálogo de repuestos y materiales de almacén</p>
+      </div>
+    </div>
+    <button class="btn-primary" (click)="abrirCrear()">
+      <span class="material-symbols-outlined">add</span>
+      Nuevo Material
+    </button>
+  </div>
+
+  <!-- ── Toast notificaciones ──────────────────────────────── -->
+  @if (mensajeExito) {
+  <div class="toast toast-success">
+    <span class="material-symbols-outlined">check_circle</span>
+    {{ mensajeExito }}
+  </div>
+  }
+  @if (mensajeError && !modalMode()) {
+  <div class="toast toast-error">
+    <span class="material-symbols-outlined">error</span>
+    {{ mensajeError }}
+  </div>
+  }
+
+  <!-- ── Barra de filtros combinados ────────────────────────── -->
+  <div class="filter-bar filter-grid">
+    <div class="search-wrapper flex-1">
+      <span class="material-symbols-outlined search-icon">search</span>
+      <input id="filtro-busqueda" type="text" class="search-input" placeholder="Buscar por código o descripción..."
+        [value]="filtroTexto()" (input)="onFiltroTextoChange($any($event.target).value)" />
+      @if (filtroTexto()) {
+      <button class="clear-btn" (click)="filtroTexto.set('')" title="Limpiar búsqueda">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+      }
+    </div>
+
+    <!-- Filtro Categoría -->
+    <div class="select-wrapper">
+      <select [value]="filtroCategoria() ?? ''" (change)="onFiltroCategoriaChange($any($event.target).value)" class="filter-select">
+        <option value="">Todas las Categorías</option>
+        @for (cat of categorias(); track cat.id_categoria) {
+          <option [value]="cat.id_categoria">{{ cat.nombre_categoria }}</option>
+        }
+      </select>
+    </div>
+
+    <!-- Filtro Unidad de Medida -->
+    <div class="select-wrapper">
+      <select [value]="filtroUnidad() ?? ''" (change)="onFiltroUnidadChange($any($event.target).value)" class="filter-select">
+        <option value="">Todas las Unidades</option>
+        @for (u of unidades(); track u.id_unidad) {
+          <option [value]="u.id_unidad">{{ u.nombre_unidad }} ({{ u.abreviatura }})</option>
+        }
+      </select>
+    </div>
+
+    <!-- Filtro Estado -->
+    <div class="select-wrapper">
+      <select [value]="filtroEstado()" (change)="onFiltroEstadoChange($any($event.target).value)" class="filter-select">
+        <option value="">Todos los Estados</option>
+        @for (est of estadosDisponibles; track est) {
+          <option [value]="est">{{ est }}</option>
+        }
+      </select>
+    </div>
+
+    <div class="filter-actions">
+      @if (filtroTexto() || filtroCategoria() || filtroUnidad() || filtroEstado()) {
+        <button class="btn-ghost" (click)="limpiarFiltros()" title="Limpiar Filtros">
+          <span class="material-symbols-outlined">filter_alt_off</span>
+          Limpiar
+        </button>
+      }
+      <span class="badge-count">{{ materialesFiltrados().length }} resultado(s)</span>
+    </div>
+  </div>
+
+  <!-- ── Tabla de Materiales ────────────────────────────────── -->
+  <div class="table-card">
+
+    @if (cargando()) {
+    <div class="table-loader">
+      <span class="spinner-lg"></span>
+      <p>Cargando catálogo de materiales...</p>
+    </div>
+    } @else if (materialesFiltrados().length === 0) {
+    <div class="table-empty">
+      <span class="material-symbols-outlined empty-icon">search_off</span>
+      <p>No se encontraron materiales con los filtros aplicados.</p>
+      @if (filtroTexto() || filtroCategoria() || filtroUnidad() || filtroEstado()) {
+        <button class="btn-ghost" (click)="limpiarFiltros()">Limpiar filtros</button>
+      } @else {
+        <button class="btn-primary" (click)="abrirCrear()">Registrar primer material</button>
+      }
+    </div>
+    } @else {
+    <div class="table-responsive">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th class="col-index">#</th>
+            <th>Código</th>
+            <th>Categoría</th>
+            <th>Unidad</th>
+            <th style="width: 35%;">Descripción</th>
+            <th>Stock</th>
+            <th>Estado</th>
+            <th class="col-actions" style="text-align: center;">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (mat of materialesFiltrados(); track mat.id_material; let i = $index) {
+          <tr>
+            <td class="col-index text-muted">{{ i + 1 }}</td>
+            <td>
+              <span class="code-badge">{{ mat.cod_materia }}</span>
+            </td>
+            <td>
+              <span class="category-name-badge">{{ mat.nombre_categoria }}</span>
+            </td>
+            <td>
+              <span class="unit-name-badge">{{ mat.nombre_unidad }} ({{ mat.nombre_unidad.substring(0,2).toUpperCase() }})</span>
+            </td>
+            <td>{{ mat.descripcion }}</td>
+            <td style="font-weight: 700;">{{ mat.stock }}</td>
+            <td>
+              @if (mat.estado === 'STOCK') {
+                <span class="badge-count text-success-badge">STOCK</span>
+              } @else if (mat.estado === 'MINIMO') {
+                <span class="badge-count text-warning-badge">MINIMO</span>
+              } @else if (mat.estado === 'AGOTADO') {
+                <span class="badge-count text-danger-badge">AGOTADO</span>
+              } @else if (mat.estado === 'ACTIVO') {
+                <span class="badge-count text-success-badge">ACTIVO</span>
+              } @else {
+                <span class="badge-count text-muted-badge">{{ mat.estado }}</span>
+              }
+            </td>
+            <td class="col-actions" style="display: flex; justify-content: center; align-items: center;">
+              <div class="actions-group">
+                <button class="btn-icon btn-edit" (click)="abrirEditar(mat)" title="Editar">
+                  <span class="material-symbols-outlined">edit</span>
+                </button>
+              </div>
+            </td>
+          </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    }
+
+  </div>
+
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- Modal Crear / Editar                                    -->
+<!-- ═══════════════════════════════════════════════════════ -->
+@if (modalMode()) {
+<div class="modal-backdrop" (click)="cerrarModal()">
+  <div class="modal-card" (click)="$event.stopPropagation()">
+
+    <div class="modal-header">
+      <div class="modal-title-group">
+        <span class="material-symbols-outlined modal-icon">
+          {{ modalMode() === 'crear' ? 'add_circle' : 'edit' }}
+        </span>
+        <h2 class="modal-title">
+          {{ modalMode() === 'crear' ? 'Nuevo Material' : 'Editar Material' }}
+        </h2>
+      </div>
+      <button class="modal-close" (click)="cerrarModal()">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+
+    <div class="modal-body" style="max-height: 70vh; overflow-y: auto;">
+
+      @if (mensajeError) {
+      <div class="form-error-alert">
+        <span class="material-symbols-outlined">error</span>
+        {{ mensajeError }}
+      </div>
+      }
+
+      <div style="display:flex; gap:1rem;">
+        <!-- Código de Material -->
+        <div class="form-group" style="flex:1;">
+          <label for="form-codigo">Código de Material</label>
+          <div class="input-wrapper" [class.input-disabled]="modalMode() === 'editar'">
+            <span class="input-icon material-symbols-outlined">qr_code</span>
+            <input id="form-codigo" type="text" [(ngModel)]="form.cod_materia" name="cod_materia"
+              placeholder="Ej: VAL-001, PER-050" maxlength="50" [readonly]="modalMode() === 'editar'" style="text-transform: uppercase;" />
+          </div>
+          @if (modalMode() === 'editar') {
+            <span class="field-hint">El código de material es inmutable.</span>
+          } @else {
+            <span class="field-hint">Código único alfanumérico. Máx. 50 carac.</span>
+          }
+        </div>
+
+        <!-- Stock (Solo se edita al crear) -->
+        <div class="form-group" style="flex:1;">
+          <label for="form-stock">Stock Inicial</label>
+          <div class="input-wrapper" [class.input-disabled]="modalMode() === 'editar'">
+            <span class="input-icon material-symbols-outlined">bar_chart</span>
+            <input id="form-stock" type="number" [(ngModel)]="form.stock" name="stock" min="0" step="any"
+              placeholder="Ej: 100" [readonly]="modalMode() === 'editar'" />
+          </div>
+          @if (modalMode() === 'editar') {
+            <span class="field-hint">El stock solo se altera mediante movimientos de almacén.</span>
+          } @else {
+            <span class="field-hint">Cantidad física inicial.</span>
+          }
+        </div>
+      </div>
+
+      <!-- Descripción (Nombre) -->
+      <div class="form-group">
+        <label for="form-descripcion">Descripción / Nombre del Material</label>
+        <div class="input-wrapper" style="align-items: flex-start; padding-top:0.4rem;">
+          <span class="input-icon material-symbols-outlined" style="margin-top:0.2rem;">description</span>
+          <textarea id="form-descripcion" [(ngModel)]="form.descripcion" name="descripcion"
+            placeholder="Especifique características del material, medidas, fabricante, etc..." rows="3" style="flex:1; border:none; background:transparent; font-family:inherit; font-size:0.875rem; color:#1f2937; outline:none; resize:vertical; padding-top:0.4rem; padding-bottom:0.4rem;"></textarea>
+        </div>
+        <span class="field-hint">Máx. 500 caracteres.</span>
+      </div>
+
+      <div style="display:flex; gap:1rem;">
+        <!-- Categoría -->
+        <div class="form-group" style="flex:1;">
+          <label for="form-categoria">Categoría</label>
+          <div class="input-wrapper">
+            <span class="input-icon material-symbols-outlined">category</span>
+            <select id="form-categoria" [(ngModel)]="form.id_categoria" name="id_categoria" class="search-input" style="border:none;background:transparent;padding-left:0;box-shadow:none;outline:none;flex:1;">
+              <option [ngValue]="0" disabled>Seleccione categoría...</option>
+              @for (cat of categorias(); track cat.id_categoria) {
+                <option [ngValue]="cat.id_categoria">{{ cat.nombre_categoria }}</option>
+              }
+            </select>
+          </div>
+        </div>
+
+        <!-- Unidad de Medida -->
+        <div class="form-group" style="flex:1;">
+          <label for="form-unidad">Unidad de Medida</label>
+          <div class="input-wrapper">
+            <span class="input-icon material-symbols-outlined">square_foot</span>
+            <select id="form-unidad" [(ngModel)]="form.id_unidad" name="id_unidad" class="search-input" style="border:none;background:transparent;padding-left:0;box-shadow:none;outline:none;flex:1;">
+              <option [ngValue]="0" disabled>Seleccione unidad...</option>
+              @for (u of unidades(); track u.id_unidad) {
+                <option [ngValue]="u.id_unidad">{{ u.nombre_unidad }} ({{ u.abreviatura }})</option>
+              }
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Estado -->
+      <div class="form-group">
+        <label for="form-estado">Estado</label>
+        <div class="input-wrapper">
+          <span class="input-icon material-symbols-outlined">info</span>
+          <select id="form-estado" [(ngModel)]="form.estado" name="form-estado" class="search-input" style="border:none;background:transparent;padding-left:0;box-shadow:none;outline:none;flex:1;">
+            @for (est of estadosDisponibles; track est) {
+              <option [value]="est">{{ est }}</option>
+            }
+          </select>
+        </div>
+        <span class="field-hint">Estado operativo del repuesto en el catálogo.</span>
+      </div>
+
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn-ghost" (click)="cerrarModal()" [disabled]="guardando()">
+        Cancelar
+      </button>
+      <button class="btn-primary" (click)="guardar()" [disabled]="guardando()">
+        @if (guardando()) {
+        <span class="spinner-sm spinner-white"></span>
+        Guardando...
+        } @else {
+        <span class="material-symbols-outlined">save</span>
+        {{ modalMode() === 'crear' ? 'Registrar Material' : 'Guardar Cambios' }}
+        }
+      </button>
+    </div>
+
+  </div>
+</div>
+}

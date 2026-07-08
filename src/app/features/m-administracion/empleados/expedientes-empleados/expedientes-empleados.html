@@ -1,0 +1,197 @@
+<div class="page-wrapper">
+
+  <!-- ── Header ─────────────────────────────────────────────── -->
+  <div class="page-header">
+    <div class="page-title-group">
+      <span class="material-symbols-outlined page-icon">folder_shared</span>
+      <div>
+        <h1 class="page-title">Gestión de Expedientes de Empleados</h1>
+        <p class="page-subtitle">Administre y consulte los expedientes asociados a los trabajadores de la empresa.</p>
+      </div>
+    </div>
+    <div class="header-actions">
+      <button class="btn-primary" (click)="abrirModalNuevo()">
+        <span class="material-symbols-outlined">create_new_folder</span>
+        Nuevo Expediente
+      </button>
+    </div>
+  </div>
+
+  <!-- ── Barra de filtros ───────────────────────────────────── -->
+  <div class="filter-bar">
+    <div class="search-wrapper">
+      <span class="material-symbols-outlined search-icon">search</span>
+      <input type="text" class="search-input" placeholder="Buscar por código de expediente, DNI o nombre..." 
+        [ngModel]="filtroBusqueda()" (ngModelChange)="filtroBusqueda.set($event)">
+      <button class="clear-btn" *ngIf="filtroBusqueda()" (click)="filtroBusqueda.set('')" title="Limpiar búsqueda">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+    <div class="filter-stats">
+      <span class="badge-count">{{ expedientesFiltrados.length }} resultado(s)</span>
+    </div>
+  </div>
+
+  <!-- ── Tabla ──────────────────────────────────────────────── -->
+  <div class="table-card">
+    
+    <div class="table-loader" *ngIf="cargando()">
+      <span class="spinner-lg"></span>
+      <p>Cargando expedientes...</p>
+    </div>
+
+    <div class="table-empty" *ngIf="!cargando() && expedientesFiltrados.length === 0">
+      <span class="material-symbols-outlined empty-icon">folder_off</span>
+      <p>No se encontraron expedientes con los criterios de búsqueda.</p>
+      <button class="btn-ghost" *ngIf="filtroBusqueda()" (click)="filtroBusqueda.set('')">Limpiar filtro</button>
+    </div>
+
+    <div class="table-responsive" *ngIf="!cargando() && expedientesFiltrados.length > 0">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th class="col-index">#</th>
+            <th>Código Expediente</th>
+            <th>DNI Empleado</th>
+            <th>Nombre Empleado</th>
+            <th>Documentos</th>
+            <th class="col-actions">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let exp of expedientesFiltrados; let i = index">
+            <td class="col-index text-muted">{{ i + 1 }}</td>
+            <td>
+              <span class="code-badge">{{ exp.codigoExpEmp }}</span>
+            </td>
+            <td class="area-nombre">{{ exp.dniEmpleado || 'N/A' }}</td>
+            <td class="text-muted-sm">{{ exp.nombreCompleto || 'N/A' }}</td>
+            <td>
+              <span class="docs-count">
+                {{ exp.documentos.length }} doc(s)
+              </span>
+            </td>
+            <td class="col-actions">
+              <div class="actions-group">
+                <button class="btn-icon btn-folder" (click)="verDetalles(exp.codigoExpEmp)" title="Ver Detalles">
+                  <span class="material-symbols-outlined">visibility</span>
+                </button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- Modal Crear Expediente                                   -->
+<!-- ═══════════════════════════════════════════════════════ -->
+@if (modalVisible()) {
+<div class="modal-backdrop" (click)="cerrarModal()">
+  <div class="modal-card modal-lg" (click)="$event.stopPropagation()">
+
+    <div class="modal-header">
+      <div class="modal-title-group">
+        <span class="material-symbols-outlined modal-icon">create_new_folder</span>
+        <h2 class="modal-title">Crear Nuevo Expediente</h2>
+      </div>
+      <button class="modal-close" (click)="cerrarModal()">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+
+    <div class="modal-body">
+      @if (mensajeError()) {
+      <div class="form-error-alert" style="margin-bottom: 1rem;">
+        <span class="material-symbols-outlined">error</span>
+        {{ mensajeError() }}
+      </div>
+      }
+
+      <!-- Paso 1: Seleccionar Empleado (si no ha seleccionado) -->
+      @if (!formExpediente.dniEmpleado) {
+        <div class="form-group" style="margin-bottom: 1rem;">
+          <label>Seleccione un Empleado para aperturar su expediente:</label>
+          <div class="search-wrapper" style="margin-top: 0.5rem; margin-bottom: 1rem;">
+            <span class="material-symbols-outlined search-icon">search</span>
+            <input type="text" class="search-input" placeholder="Buscar por nombre, apellido o DNI..." 
+                   (input)="filtrarEmpleados($event)" [value]="filtroEmpleado()">
+          </div>
+
+          <div class="table-responsive" style="max-height: 250px; overflow-y: auto;">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>DNI</th>
+                  <th>Nombre Completo</th>
+                  <th class="col-actions">Acción</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (emp of empleadosFiltrados(); track emp.dni_empleado) {
+                  <tr>
+                    <td><span class="code-badge">{{ emp.dni_empleado }}</span></td>
+                    <td><span class="area-nombre">{{ emp.nombre }} {{ emp.apellido1 }} {{ emp.apellido2 }}</span></td>
+                    <td class="col-actions">
+                      <button class="btn-primary btn-sm" (click)="seleccionarEmpleado(emp)">
+                        Seleccionar
+                      </button>
+                    </td>
+                  </tr>
+                }
+                @if (empleadosFiltrados().length === 0) {
+                  <tr>
+                    <td colspan="3" class="text-center text-muted" style="padding: 2rem;">
+                      No se encontraron empleados disponibles.
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
+      } @else {
+        <!-- Paso 2: Formulario del expediente -->
+        <div class="form-group" style="margin-bottom: 1.5rem;">
+          <label>Empleado Asignado</label>
+          <div class="input-wrapper search-input-wrapper" style="margin-top: 0.5rem;">
+            <span class="input-icon material-symbols-outlined">person</span>
+            <input type="text" [value]="empleadoSeleccionadoNombre()" readonly class="pointer-input" style="background-color: #f9fafb;">
+            <button type="button" class="btn-clear-input" (click)="formExpediente.dniEmpleado = ''" title="Cambiar empleado" style="position: absolute; right: 0.5rem; border: none; background: none; color: #ef4444; cursor: pointer;">
+              <span class="material-symbols-outlined">close</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="form-cod-exp">Código del Expediente *</label>
+          <div class="input-wrapper" style="margin-top: 0.5rem;">
+            <span class="input-icon material-symbols-outlined">tag</span>
+            <input id="form-cod-exp" type="text" [(ngModel)]="formExpediente.codigoExpEmp" name="codigoExpEmp"
+              placeholder="Ej: EXP-EMP-001" maxlength="20" />
+          </div>
+          <span class="field-hint">Máximo 20 caracteres.</span>
+        </div>
+      }
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn-ghost" (click)="cerrarModal()" [disabled]="guardando()">Cancelar</button>
+      <button class="btn-primary" (click)="guardarExpediente()" [disabled]="guardando() || !formExpediente.dniEmpleado || !formExpediente.codigoExpEmp">
+        @if (guardando()) {
+        <span class="spinner-sm spinner-white"></span>
+        Guardando...
+        } @else {
+        <span class="material-symbols-outlined">save</span>
+        Crear Expediente
+        }
+      </button>
+    </div>
+  </div>
+</div>
+}
+
+

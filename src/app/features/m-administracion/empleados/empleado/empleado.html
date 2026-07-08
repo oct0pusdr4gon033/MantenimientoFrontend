@@ -1,0 +1,225 @@
+<div class="page-wrapper">
+  <!-- Header -->
+  <div class="page-header">
+    <div class="page-title-group">
+      <span class="material-symbols-outlined page-icon">group</span>
+      <div>
+        <h1 class="page-title">Directorio de Empleados</h1>
+        <p class="page-subtitle">Administra los usuarios y personal de la empresa</p>
+      </div>
+    </div>
+    <div class="header-actions">
+      <button class="btn-primary" (click)="abrirModalNuevo()">
+        <span class="material-symbols-outlined">person_add</span>
+        Nuevo Empleado
+      </button>
+    </div>
+  </div>
+
+  <!-- Contenido Principal -->
+  <div class="table-card">
+    @if (cargando()) {
+      <div class="table-loader">
+        <div class="spinner-lg"></div>
+        <span>Cargando empleados...</span>
+      </div>
+    } @else if (empleados().length === 0) {
+      <div class="table-empty">
+        <span class="material-symbols-outlined empty-icon">group_off</span>
+        <p>No hay empleados registrados en el sistema.</p>
+        <button class="btn-ghost" (click)="abrirModalNuevo()">Registrar Empleado</button>
+      </div>
+    } @else {
+      <div class="table-responsive">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th class="col-index">DNI</th>
+              <th>Código</th>
+              <th>Nombre Completo</th>
+              <th>Contacto</th>
+              <th>Rol / Puesto</th>
+              <th>Estado</th>
+              <th class="col-actions">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (empleado of empleados(); track empleado.dni_empleado) {
+              <tr>
+                <td class="text-muted-sm">{{ empleado.dni_empleado }}</td>
+                <td><span class="code-badge">{{ empleado.codigo_empleado || 'N/A' }}</span></td>
+                <td>
+                  <div class="cell-main">{{ empleado.nombre }} {{ empleado.apellido1 }} {{ empleado.apellido2 }}</div>
+                </td>
+                <td>
+                  <div class="cell-stacked">
+                    <span class="cell-main">{{ empleado.telf || '-' }}</span>
+                    <span class="cell-sub">{{ empleado.email || '-' }}</span>
+                  </div>
+                </td>
+                <td>
+                  <div class="cell-main">{{ empleado.nombreRol }}</div>
+                </td>
+                <td>
+                  @if (empleado.estado) {
+                    <span class="estado-badge badge-operativo">ACTIVO</span>
+                  } @else {
+                    <span class="estado-badge badge-inactivo">INACTIVO</span>
+                  }
+                </td>
+                <td>
+                  <div class="actions-group">
+                    <button class="btn-icon" style="color: #3b82f6;" title="Ver Expediente" (click)="verExpediente(empleado.dni_empleado)">
+                      <span class="material-symbols-outlined">folder_shared</span>
+                    </button>
+                    <button class="btn-icon btn-edit" title="Editar" (click)="abrirModalEditar(empleado)">
+                      <span class="material-symbols-outlined">edit</span>
+                    </button>
+                    <button class="btn-icon btn-delete" title="Eliminar" (click)="eliminar(empleado)">
+                      <span class="material-symbols-outlined">person_remove</span>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </div>
+</div>
+
+<!-- Modal Formulario -->
+@if (modalVisible()) {
+  <div class="modal-backdrop">
+    <div class="modal-card modal-lg">
+      <div class="modal-header">
+        <div class="modal-title-group">
+          <span class="material-symbols-outlined modal-icon">badge</span>
+          <h3 class="modal-title">{{ modoEdicion() ? 'Editar Empleado' : 'Registrar Empleado' }}</h3>
+        </div>
+        <button class="modal-close" (click)="cerrarModal()">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+
+      <div class="modal-body" style="max-height: 70vh; overflow-y: auto;">
+        <form [formGroup]="empleadoForm" class="form-group">
+          
+          <div class="form-row">
+            <div class="form-group">
+              <label>DNI / Documento *</label>
+              <div class="input-wrapper" [class.input-disabled]="modoEdicion()">
+                <span class="material-symbols-outlined input-icon">pin</span>
+                <input type="text" formControlName="dni_empleado" placeholder="Nro documento" />
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label>Código Interno</label>
+              <div class="input-wrapper">
+                <span class="material-symbols-outlined input-icon">numbers</span>
+                <input type="text" formControlName="codigo_empleado" placeholder="Ej: EMP-001" />
+              </div>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Nombres *</label>
+            <div class="input-wrapper">
+              <span class="material-symbols-outlined input-icon">person</span>
+              <input type="text" formControlName="nombre" placeholder="Nombres completos" />
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label>Apellido Paterno *</label>
+              <div class="input-wrapper">
+                <input type="text" formControlName="apellido1" placeholder="Primer apellido" />
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label>Apellido Materno</label>
+              <div class="input-wrapper">
+                <input type="text" formControlName="apellido2" placeholder="Segundo apellido" />
+              </div>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label>Teléfono</label>
+              <div class="input-wrapper">
+                <span class="material-symbols-outlined input-icon">call</span>
+                <input type="text" formControlName="telf" placeholder="Número celular" />
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label>Correo Electrónico</label>
+              <div class="input-wrapper">
+                <span class="material-symbols-outlined input-icon">mail</span>
+                <input type="email" formControlName="email" placeholder="correo@empresa.com" />
+              </div>
+            </div>
+          </div>
+
+          <hr style="border: 0; border-top: 1px solid #f3f4f6; margin: 0.5rem 0;" />
+
+          <div class="form-row">
+            <div class="form-group">
+              <label>Rol Asignado *</label>
+              <div class="input-wrapper select-wrapper">
+                <span class="material-symbols-outlined input-icon">admin_panel_settings</span>
+                <select formControlName="id_rol">
+                  <option value="" disabled>-- Seleccione un rol --</option>
+                  @for (rol of roles(); track rol.id_rol) {
+                    <option [value]="rol.id_rol">{{ rol.nombre_rol }} ({{ rol.prefijo }})</option>
+                  }
+                </select>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label>Estado Activo</label>
+              <div class="input-wrapper select-wrapper">
+                <span class="material-symbols-outlined input-icon">toggle_on</span>
+                <select formControlName="estado">
+                  <option [ngValue]="true">Activo / Operativo</option>
+                  <option [ngValue]="false">Inactivo / Cesado</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Contraseña de Acceso</label>
+            <div class="input-wrapper">
+              <span class="material-symbols-outlined input-icon">password</span>
+              <input type="password" formControlName="password_hash" placeholder="••••••••" />
+            </div>
+            <span class="field-hint">
+              {{ modoEdicion() ? 'Deja en blanco para mantener la contraseña actual.' : 'Asigna una contraseña inicial al usuario.' }}
+            </span>
+          </div>
+
+        </form>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn-ghost" (click)="cerrarModal()" [disabled]="guardando()">Cancelar</button>
+        <button class="btn-primary" (click)="guardar()" [disabled]="empleadoForm.invalid || guardando()">
+          @if (guardando()) {
+            <div class="spinner-sm spinner-white"></div>
+            <span>Guardando...</span>
+          } @else {
+            <span class="material-symbols-outlined">save</span>
+            <span>Guardar Empleado</span>
+          }
+        </button>
+      </div>
+    </div>
+  </div>
+}

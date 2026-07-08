@@ -1,0 +1,56 @@
+/* ─── Shell del módulo ───────────────────────────────────── */
+.module-shell {
+  display: flex;
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+  background: #f0f2f5;
+}
+
+/* ─── Área de contenido ──────────────────────────────────── */
+.module-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* ─── Topbar ─────────────────────────────────────────────── */
+.module-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 1.75rem;
+  height: 56px;
+  background: #ffffff;
+  border-bottom: 1px solid #e5e7eb;
+  flex-shrink: 0;
+}
+
+.topbar-title {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #1a1a2e;
+  font-family: 'Inter', sans-serif;
+}
+
+.topbar-badge {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: #64748b;
+  background: rgba(100, 116, 139, 0.1);
+  padding: 0.2rem 0.65rem;
+  border-radius: 20px;
+}
+
+/* ─── Main ───────────────────────────────────────────────── */
+.module-main {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1.5rem 1.75rem;
+}
+
+.module-main::-webkit-scrollbar { width: 6px; }
+.module-main::-webkit-scrollbar-track { background: transparent; }
+.module-main::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 4px; }

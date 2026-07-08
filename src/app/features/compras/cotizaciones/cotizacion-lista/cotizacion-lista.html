@@ -1,0 +1,110 @@
+<div class="page-wrapper">
+  <!-- Page Header -->
+  <header class="page-header">
+    <div class="page-title-group">
+      <span class="material-symbols-outlined page-icon" style="color: #e86b1a;">request_quote</span>
+      <div>
+        <h1 class="page-title">Cotizaciones de Proveedor</h1>
+        <p class="page-subtitle">Gestiona las cotizaciones de compra y apruébalas para generar Órdenes de Compra.</p>
+      </div>
+    </div>
+    <button class="btn-primary" (click)="crearCotizacion()"
+      style="background: linear-gradient(135deg, #f97316, #e86b1a); box-shadow: 0 3px 12px rgba(232, 107, 26, 0.3);">
+      <span class="material-symbols-outlined">add</span>
+      Nueva Cotización
+    </button>
+  </header>
+
+  <!-- Toast Notifications -->
+  @if (successMessage()) {
+    <div class="toast toast-success">
+      <span class="material-symbols-outlined">check_circle</span>
+      <span>{{ successMessage() }}</span>
+    </div>
+  }
+  @if (errorMessage()) {
+    <div class="toast toast-error">
+      <span class="material-symbols-outlined">error</span>
+      <span>{{ errorMessage() }}</span>
+    </div>
+  }
+
+  <!-- Table Card -->
+  <main class="table-card">
+    @if (loading()) {
+      <div class="table-loader">
+        <div class="spinner-lg" style="border-top-color: #e86b1a;"></div>
+        <p>Cargando lista de cotizaciones...</p>
+      </div>
+    }
+
+    @if (!loading() && cotizaciones().length === 0) {
+      <div class="table-empty">
+        <span class="material-symbols-outlined empty-icon">sentiment_dissatisfied</span>
+        <p>No se encontraron cotizaciones registradas.</p>
+      </div>
+    }
+
+    @if (!loading() && cotizaciones().length > 0) {
+      <div class="table-responsive">
+        <table class="data-table">
+        <thead>
+          <tr>
+            <th class="col-index">#</th>
+            <th>Nro. Cotización</th>
+            <th>Solped Asociada</th>
+            <th>Proveedor</th>
+            <th>Fecha</th>
+            <th>Total (S/.)</th>
+            <th>Estado</th>
+            <th class="col-actions">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (c of cotizaciones(); track c.id_cotizacion; let i = $index) {
+            <tr>
+              <td class="col-index text-muted">{{ i + 1 }}</td>
+              <td style="font-weight: 600;">{{ c.nro_cotizacion }}</td>
+              <td>
+                @if (c.cod_solicitud_pedido) {
+                  <span class="code-badge" style="color: #e86b1a; background: rgba(232, 107, 26, 0.08);">
+                    {{ c.cod_solicitud_pedido }}
+                  </span>
+                } @else {
+                  <span class="text-muted">-</span>
+                }
+              </td>
+              <td>{{ c.razon_social_proveedor }}</td>
+              <td>{{ c.fecha_cotizacion | date:'dd/MM/yyyy' }}</td>
+              <td style="font-weight: 700;">{{ c.total | currency:'PEN':'symbol-narrow' }}</td>
+              <td>
+                <span class="category-name-badge" [ngClass]="{
+                  'text-warning-badge': c.estado === 'PENDIENTE',
+                  'text-success-badge': c.estado === 'APROBADO',
+                  'text-danger-badge': c.estado === 'RECHAZADO'
+                }">
+                  {{ c.estado }}
+                </span>
+              </td>
+              <td class="col-actions">
+                <div class="actions-group">
+                  <button class="btn-icon btn-ghost" (click)="verDetalle(c.id_cotizacion)" title="Ver Detalle"
+                    style="color: #6b7280;">
+                    <span class="material-symbols-outlined">visibility</span>
+                  </button>
+                  @if (c.estado === 'PENDIENTE') {
+                    <button class="btn-icon btn-success" (click)="aprobarCotizacion(c.id_cotizacion)" title="Aprobar Cotización"
+                      style="color: #10b981; background: rgba(16, 185, 129, 0.08);">
+                      <span class="material-symbols-outlined">check_circle</span>
+                    </button>
+                  }
+                </div>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+  </main>
+</div>

@@ -1,0 +1,124 @@
+<div class="page-wrapper">
+  
+  <div class="page-header">
+    <div class="page-title-group">
+      <button class="btn-back" routerLink="/GestionMantenimiento/estrategia/crear" title="Regresar al paso 1">
+        <span class="material-symbols-outlined">arrow_back</span>
+      </button>
+      <span class="material-symbols-outlined page-icon">list_alt</span>
+      <div>
+        <h1 class="page-title">Detalles de la Estrategia</h1>
+        <p class="page-subtitle">Paso 2: Defina los umbrales de mantenimiento para {{ draftEstrategia?.cod_estrategia }}</p>
+      </div>
+    </div>
+    <button type="button" class="btn-primary" (click)="addDetalle()" style="background: linear-gradient(135deg, #10b981, #059669); box-shadow: 0 3px 12px rgba(16, 185, 129, 0.3);">
+      <span class="material-symbols-outlined">add</span>
+      Añadir Detalle
+    </button>
+  </div>
+
+  <div class="table-card" style="padding: 1.5rem; background: transparent; border: none; box-shadow: none;">
+    <form [formGroup]="detallesForm" (ngSubmit)="guardarEstrategia()">
+      
+      <div formArrayName="detalles" style="display: flex; flex-direction: column; gap: 1.5rem;">
+        @for (detalle of detallesArray.controls; track $index) {
+          <div [formGroupName]="$index" class="table-card" style="padding: 1.5rem; position: relative;">
+            
+            <button type="button" class="btn-icon btn-delete" (click)="removeDetalle($index)" style="position: absolute; top: 1rem; right: 1rem; color: #ef4444;" title="Eliminar este detalle">
+              <span class="material-symbols-outlined">delete</span>
+            </button>
+
+            <h4 style="margin-bottom: 1.5rem; font-weight: 600; color: #374151; font-size: 1.1rem; border-bottom: 1px solid #f3f4f6; padding-bottom: 0.5rem;">
+              <span class="material-symbols-outlined" style="vertical-align: middle; margin-right: 0.3rem; font-size: 1.2rem; color: #e86b1a;">label_important</span>
+              Detalle #{{ $index + 1 }}
+            </h4>
+            
+            <!-- Fila 1: PM y Unidades -->
+            <div class="form-row" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; margin-bottom: 1.5rem;">
+              <div class="form-group">
+                <label>Tipo PM *</label>
+                <div class="input-wrapper">
+                  <span class="input-icon material-symbols-outlined">label</span>
+                  <input type="text" formControlName="tipo_pm" placeholder="Ej: PM1">
+                </div>
+              </div>
+              <div class="form-group">
+                <label>Medida *</label>
+                <div class="input-wrapper select-wrapper">
+                  <span class="input-icon material-symbols-outlined">straighten</span>
+                  <select formControlName="nombre_medida">
+                    <option value="Horometros">Horómetros</option>
+                    <option value="Dias">Días</option>
+                    <option value="Meses">Meses</option>
+                    <option value="Semanas">Semanas</option>
+                    <option value="Kilometros">Kilómetros</option>
+                  </select>
+                </div>
+              </div>
+              <div class="form-group">
+                <label>Unidad *</label>
+                <div class="input-wrapper">
+                  <span class="input-icon material-symbols-outlined">square_foot</span>
+                  <input type="text" formControlName="uni_med" readonly style="background: #f9fafb; color: #6b7280;">
+                </div>
+              </div>
+            </div>
+
+            <!-- Fila 2: Umbrales y Tolerancia -->
+            <div class="form-row" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1.5rem;">
+              <div class="form-group">
+                <label>Umbral Mantenimiento *</label>
+                <div class="input-wrapper">
+                  <span class="input-icon material-symbols-outlined">flag</span>
+                  <input type="number" formControlName="umbral_mant" placeholder="0">
+                </div>
+              </div>
+              <div class="form-group">
+                <label>% Tolerancia</label>
+                <div class="input-wrapper">
+                  <span class="input-icon material-symbols-outlined">percent</span>
+                  <input type="number" formControlName="porcentaje_tol" placeholder="0">
+                </div>
+              </div>
+              <div class="form-group">
+                <label>Tol. Inferior</label>
+                <div class="input-wrapper">
+                  <span class="input-icon material-symbols-outlined">arrow_downward</span>
+                  <input type="number" formControlName="tolerancia_inf" placeholder="0" readonly style="background: #f9fafb; color: #6b7280;">
+                </div>
+              </div>
+              <div class="form-group">
+                <label>Tol. Superior</label>
+                <div class="input-wrapper">
+                  <span class="input-icon material-symbols-outlined">arrow_upward</span>
+                  <input type="number" formControlName="tolerancia_sup" placeholder="0" readonly style="background: #f9fafb; color: #6b7280;">
+                </div>
+              </div>
+            </div>
+
+          </div>
+        } @empty {
+          <div class="table-card" style="padding: 3rem;">
+            <div class="table-empty">
+              <span class="material-symbols-outlined empty-icon" style="font-size: 3rem; color: #d1d5db;">format_list_bulleted</span>
+              <p style="margin-top: 1rem; font-size: 1.1rem; color: #4b5563;">Aún no hay detalles agregados</p>
+              <p class="text-muted-sm" style="margin-top: 0.5rem;">Haga clic en el botón superior derecho para añadir un nuevo detalle a la estrategia.</p>
+            </div>
+          </div>
+        }
+      </div>
+
+      <!-- Actions -->
+      <div class="table-card" style="margin-top: 1.5rem; padding: 1.5rem; display: flex; justify-content: flex-end; align-items: center; gap: 1rem;">
+        <button type="button" class="btn-ghost" (click)="regresar()">
+          Cancelar
+        </button>
+        <button type="submit" class="btn-primary" [disabled]="detallesArray.length === 0 || detallesForm.invalid">
+          <span class="material-symbols-outlined" style="font-size: 1.1rem; margin-right: 0.3rem;">save</span>
+          Guardar Estrategia Completa
+        </button>
+      </div>
+    </form>
+  </div>
+
+</div>

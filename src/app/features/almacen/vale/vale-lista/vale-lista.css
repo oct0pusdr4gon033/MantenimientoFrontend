@@ -1,0 +1,483 @@
+/* ── Page Layout ────────────────────────────────────────────── */
+.page-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  font-family: 'Inter', sans-serif;
+}
+
+.page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.page-title-group {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+}
+
+.page-icon {
+  font-size: 2.2rem;
+  transition: color 0.2s ease;
+}
+
+.page-title {
+  font-size: 1.45rem;
+  font-weight: 700;
+  color: #1a1a2e;
+  margin: 0;
+}
+
+.page-subtitle {
+  font-size: 0.82rem;
+  color: #6b7280;
+  margin: 0;
+}
+
+/* ── Tabs (Pestañas) ────────────────────────────────────────── */
+.tabs-container {
+  display: flex;
+  gap: 1rem;
+  border-bottom: 2px solid #e2e8f0;
+  padding-bottom: 2px;
+  margin-bottom: 0.5rem;
+}
+
+.tab-btn {
+  background: transparent;
+  border: none;
+  padding: 0.75rem 1.25rem;
+  font-family: inherit;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #64748b;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  position: relative;
+  transition: all 0.2s ease;
+}
+
+.tab-btn:hover {
+  color: #0f172a;
+}
+
+.tab-btn::after {
+  content: '';
+  position: absolute;
+  bottom: -4px;
+  left: 0;
+  width: 100%;
+  height: 4px;
+  background: transparent;
+  border-radius: 2px;
+  transition: all 0.2s ease;
+}
+
+.tab-btn span {
+  font-size: 1.2rem;
+}
+
+/* ── Buttons ────────────────────────────────────────────────── */
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.65rem 1.3rem;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.btn-primary:hover {
+  transform: translateY(-1px);
+}
+
+.btn-primary span {
+  font-size: 1.1rem;
+}
+
+.btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.6rem 1.1rem;
+  background: transparent;
+  color: #6b7280;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.btn-ghost:hover {
+  background: #f9fafb;
+  color: #374151;
+}
+
+.btn-sm {
+  padding: 0.45rem 0.9rem;
+  font-size: 0.82rem;
+}
+
+.btn-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 7px;
+  cursor: pointer;
+  transition: background 0.15s, transform 0.12s;
+}
+
+.btn-icon:hover {
+  transform: scale(1.06);
+}
+
+.btn-icon span {
+  font-size: 1.05rem;
+}
+
+.btn-detail {
+  background: rgba(16, 185, 129, 0.1);
+  color: #10b981;
+}
+
+.btn-detail:hover {
+  background: rgba(16, 185, 129, 0.2);
+}
+
+/* ── Filtros ────────────────────────────────────────────────── */
+.filter-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.filter-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  flex: 1;
+  flex-wrap: wrap;
+}
+
+.search-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex: 1;
+  max-width: 360px;
+}
+
+.search-icon {
+  position: absolute;
+  left: 0.75rem;
+  color: #9ca3af;
+  font-size: 1.1rem;
+  pointer-events: none;
+}
+
+.search-input {
+  width: 100%;
+  padding: 0.6rem 2.5rem;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  color: #1f2937;
+  background: #fff;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  outline: none;
+}
+
+.search-input:focus {
+  border-color: #cbd5e1;
+}
+
+.clear-btn {
+  position: absolute;
+  right: 0.6rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #9ca3af;
+  display: flex;
+  align-items: center;
+  padding: 0.1rem;
+  border-radius: 4px;
+}
+
+.date-filter-group {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.input-date-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.input-date-wrapper label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #94a3b8;
+  text-transform: uppercase;
+}
+
+.input-date-wrapper input {
+  padding: 0.4rem 0.6rem;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  color: #374151;
+  outline: none;
+}
+
+.badge-count {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #6b7280;
+  background: #f3f4f6;
+  padding: 0.35rem 0.8rem;
+  border-radius: 20px;
+}
+
+/* ── Tabla ──────────────────────────────────────────────────── */
+.table-card {
+  background: #fff;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  overflow: hidden;
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.04);
+}
+
+.table-loader,
+.table-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 4rem 2rem;
+  color: #9ca3af;
+  font-size: 0.9rem;
+}
+
+.empty-icon {
+  font-size: 3.5rem;
+  color: #d1d5db;
+}
+
+.table-responsive {
+  overflow-x: auto;
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.data-table thead tr {
+  background: #f9fafb;
+  border-bottom: 2px solid #e5e7eb;
+}
+
+.data-table th {
+  padding: 0.9rem 1rem;
+  text-align: left;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #6b7280;
+  white-space: nowrap;
+}
+
+.data-table td {
+  padding: 0.9rem 1rem;
+  color: #374151;
+  border-bottom: 1px solid #f3f4f6;
+  vertical-align: middle;
+}
+
+.data-table tbody tr:hover {
+  background: #fafafa;
+}
+
+.data-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.col-actions {
+  width: 80px;
+}
+
+.actions-group {
+  display: flex;
+  gap: 0.45rem;
+  align-items: center;
+}
+
+.text-muted {
+  color: #9ca3af;
+  font-size: 0.8rem;
+}
+
+.code-badge {
+  font-family: monospace;
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: #1f2937;
+  background: #f3f4f6;
+  padding: 0.15rem 0.45rem;
+  border-radius: 5px;
+}
+
+.ot-link {
+  font-family: monospace;
+  font-weight: 700;
+  color: #e86b1a;
+  background: rgba(232, 107, 26, 0.08);
+  padding: 0.15rem 0.45rem;
+  border-radius: 5px;
+  border: 1px solid rgba(232, 107, 26, 0.2);
+}
+
+.material-count {
+  font-weight: 600;
+  color: #475569;
+}
+
+/* ── Estado pills ───────────────────────────────────────────── */
+.estado-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.74rem;
+  font-weight: 700;
+  padding: 0.22rem 0.7rem;
+  border-radius: 20px;
+}
+
+.estado-pill::before {
+  content: '';
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+
+.estado-pendiente {
+  background: #fef9c3;
+  color: #854d0e;
+}
+
+.estado-pendiente::before {
+  background: #ca8a04;
+}
+
+.estado-activa {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.estado-activa::before {
+  background: #16a34a;
+}
+
+/* ── Spinner ────────────────────────────────────────────────── */
+.spinner-lg {
+  width: 36px;
+  height: 36px;
+  border: 3px solid #f3f4f6;
+  border-radius: 50%;
+  animation: spin 0.75s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ── Temas de Layout Dinámicos ───────────────────────────────── */
+
+/* 1. Almacen (Verde) */
+.almacen-theme .tab-btn.active {
+  color: #10b981;
+}
+
+.almacen-theme .tab-btn.active::after {
+  background: #10b981;
+}
+
+.almacen-theme .btn-primary {
+  background: linear-gradient(135deg, #34d399, #10b981);
+  box-shadow: 0 4px 6px -1px rgba(16, 185, 129, 0.2);
+}
+
+.almacen-theme .btn-primary:hover {
+  background: linear-gradient(135deg, #059669, #047857);
+}
+
+.almacen-theme .page-icon {
+  color: #10b981;
+}
+
+.almacen-theme .spinner-lg {
+  border-top-color: #10b981;
+}
+
+.almacen-theme .search-input:focus {
+  border-color: #10b981;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+}
+
+/* 2. Mantenimiento (Naranja) */
+.mantenimiento-theme .tab-btn.active {
+  color: #e86b1a;
+}
+
+.mantenimiento-theme .tab-btn.active::after {
+  background: #e86b1a;
+}
+
+.mantenimiento-theme .btn-primary {
+  background: linear-gradient(135deg, #f97316, #e86b1a);
+  box-shadow: 0 4px 6px -1px rgba(232, 107, 26, 0.2);
+}
+
+.mantenimiento-theme .btn-primary:hover {
+  background: linear-gradient(135deg, #ea580c, #d97706);
+}
+
+.mantenimiento-theme .page-icon {
+  color: #e86b1a;
+}
+
+.mantenimiento-theme .spinner-lg {
+  border-top-color: #e86b1a;
+}
+
+.mantenimiento-theme .search-input:focus {
+  border-color: #e86b1a;
+  box-shadow: 0 0 0 3px rgba(232, 107, 26, 0.1);
+}

@@ -1,0 +1,316 @@
+/* ─── Page Wrapper ───────────────────────────────────────── */
+.page-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  font-family: 'Inter', sans-serif;
+  height: 100%;
+}
+
+/* ─── Page Header ────────────────────────────────────────── */
+.page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.page-title-group {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+}
+
+.btn-back {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 8px;
+  background: #fff;
+  cursor: pointer;
+  color: #6b7280;
+  transition: color 0.15s, background 0.15s, border-color 0.15s;
+}
+.btn-back:hover { color: #e86b1a; border-color: #e86b1a; background: rgba(232,107,26,0.06); }
+.btn-back .material-symbols-outlined { font-size: 1.1rem; }
+
+.page-icon { font-size: 2rem; color: #dc2626; }
+
+.page-title {
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: #1a1a2e;
+  margin: 0;
+  line-height: 1.2;
+}
+
+.page-subtitle {
+  font-size: 0.8rem;
+  color: #6b7280;
+  margin: 0.1rem 0 0;
+}
+
+/* ─── Buttons ────────────────────────────────────────────── */
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.6rem 1.2rem;
+  background: linear-gradient(135deg, #f97316, #e86b1a);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  font-family: 'Inter', sans-serif;
+  cursor: pointer;
+  transition: transform 0.15s, box-shadow 0.15s;
+  box-shadow: 0 3px 12px rgba(232, 107, 26, 0.3);
+}
+.btn-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 16px rgba(232, 107, 26, 0.4); }
+.btn-primary .material-symbols-outlined { font-size: 1rem; }
+
+.btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.6rem 1.1rem;
+  background: transparent;
+  color: #6b7280;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  font-family: 'Inter', sans-serif;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.btn-ghost:hover { background: #f9fafb; color: #374151; }
+.btn-ghost .material-symbols-outlined { font-size: 1rem; }
+
+/* ─── Error Banner ───────────────────────────────────────── */
+.error-banner {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.9rem 1.1rem;
+  background: #fef2f2;
+  border: 1px solid #fca5a5;
+  border-radius: 10px;
+  color: #991b1b;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+.error-banner .material-symbols-outlined { font-size: 1.1rem; }
+
+/* ─── Loader ─────────────────────────────────────────────── */
+.loader-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  padding: 5rem 2rem;
+  color: #9ca3af;
+}
+
+.spinner-lg {
+  width: 36px;
+  height: 36px;
+  border: 3px solid #f3f4f6;
+  border-top-color: #e86b1a;
+  border-radius: 50%;
+  animation: spin 0.75s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ─── Content Grid ───────────────────────────────────────── */
+.content-grid {
+  display: grid;
+  grid-template-columns: 300px 1fr;
+  gap: 1.25rem;
+  flex: 1;
+  min-height: 0;
+}
+
+@media (max-width: 900px) {
+  .content-grid { grid-template-columns: 1fr; }
+}
+
+/* ─── Info Panel ─────────────────────────────────────────── */
+.info-panel {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+  height: fit-content;
+}
+
+.info-section { display: flex; flex-direction: column; gap: 0.75rem; }
+
+.info-section-title {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #9ca3af;
+  margin: 0;
+}
+.info-section-title .material-symbols-outlined { font-size: 1rem; color: #e86b1a; }
+
+.info-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.4rem 0;
+  border-bottom: 1px solid #f9fafb;
+}
+.info-row:last-child { border-bottom: none; }
+
+.info-lbl { font-size: 0.8rem; color: #6b7280; font-weight: 500; }
+.info-val  { font-size: 0.875rem; color: #1f2937; font-weight: 600; text-align: right; }
+
+.divider { height: 1px; background: #f3f4f6; }
+
+/* ─── Badges de vencimiento ──────────────────────────────── */
+.doc-badge {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  padding: 0.22rem 0.65rem;
+  border-radius: 20px;
+  text-transform: uppercase;
+}
+.badge-vigente    { background: rgba(34, 197, 94, 0.1);  color: #15803d; border: 1px solid rgba(34,197,94,0.25); }
+.badge-por-vencer { background: rgba(234, 179, 8, 0.1);  color: #92400e; border: 1px solid rgba(234,179,8,0.3); }
+.badge-vencido    { background: rgba(239, 68, 68, 0.1);  color: #dc2626; border: 1px solid rgba(239,68,68,0.25); }
+
+/* ─── Code Badge ─────────────────────────────────────────── */
+.code-badge {
+  display: inline-block;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: #e86b1a;
+  background: rgba(232, 107, 26, 0.08);
+  padding: 0.2rem 0.6rem;
+  border-radius: 5px;
+  border: 1px solid rgba(232, 107, 26, 0.2);
+}
+
+/* ─── Date Cards ─────────────────────────────────────────── */
+.date-card {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  border-radius: 10px;
+}
+.date-card .material-symbols-outlined { font-size: 1.2rem; }
+
+.date-registro   { background: #f0fdf4; color: #15803d; }
+.date-vencimiento { background: rgba(249, 115, 22, 0.06); color: #c2410c; }
+.date-vencido    { background: #fef2f2; color: #dc2626; }
+
+.date-lbl { display: block; font-size: 0.72rem; font-weight: 600; opacity: 0.75; }
+.date-val { display: block; font-size: 0.9rem; font-weight: 700; margin-top: 0.1rem; }
+
+/* ─── URL Section ────────────────────────────────────────── */
+.url-section { display: flex; flex-direction: column; gap: 0.35rem; }
+.url-label { font-size: 0.72rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: #9ca3af; }
+.url-link {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.78rem;
+  color: #3b82f6;
+  text-decoration: none;
+  word-break: break-all;
+  transition: color 0.15s;
+}
+.url-link:hover { color: #1d4ed8; text-decoration: underline; }
+.url-link .material-symbols-outlined { font-size: 0.9rem; flex-shrink: 0; }
+
+/* ─── PDF Panel ──────────────────────────────────────────── */
+.pdf-panel {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  min-height: 600px;
+}
+
+.pdf-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.85rem 1.25rem;
+  background: #fafafa;
+  border-bottom: 1px solid #e5e7eb;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #6b7280;
+}
+.pdf-header .material-symbols-outlined { font-size: 1rem; color: #dc2626; }
+
+/* ─── PDF Empty State ────────────────────────────────────── */
+.pdf-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 5rem 2rem;
+  text-align: center;
+  color: #9ca3af;
+  flex: 1;
+}
+.pdf-empty .material-symbols-outlined { font-size: 3.5rem; color: #d1d5db; }
+.pdf-empty h3 { font-size: 1rem; font-weight: 700; color: #6b7280; margin: 0; }
+.pdf-empty p  { font-size: 0.85rem; margin: 0; }
+
+/* ─── PDF Viewer ─────────────────────────────────────────── */
+.pdf-viewer-wrapper {
+  position: relative;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.pdf-loading, .pdf-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 4rem 2rem;
+  text-align: center;
+  color: #9ca3af;
+  flex: 1;
+}
+.pdf-error .material-symbols-outlined { font-size: 3rem; color: #fca5a5; }
+.pdf-error h3 { font-size: 1rem; font-weight: 700; color: #6b7280; margin: 0; }
+.pdf-error p  { font-size: 0.85rem; margin: 0; max-width: 320px; }
+
+.pdf-iframe {
+  width: 100%;
+  flex: 1;
+  border: none;
+  min-height: 560px;
+}
+
+.pdf-hidden {
+  position: absolute;
+  visibility: hidden;
+  pointer-events: none;
+}

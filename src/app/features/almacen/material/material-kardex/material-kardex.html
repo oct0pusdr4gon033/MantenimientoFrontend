@@ -1,0 +1,230 @@
+<div class="page-wrapper mantenimiento-theme">
+
+  <!-- ── Header ─────────────────────────────────────────────── -->
+  <div class="page-header">
+    <div class="page-title-group">
+      <button class="btn-back-kardex" (click)="volver()">
+        <span class="material-symbols-outlined">arrow_back</span>
+      </button>
+      <div>
+        <h1 class="page-title">Kardex de Inventario</h1>
+        <p class="page-subtitle">Historial de movimientos de entradas, salidas y saldos de stock</p>
+      </div>
+    </div>
+
+    <button class="btn-primary" (click)="abrirModal()">
+      <span class="material-symbols-outlined">add_box</span>
+      Registrar Entrada de Stock
+    </button>
+  </div>
+
+  <!-- ── Notificaciones flotantes ────────────────────────────── -->
+  @if (mensajeError() && !modalAbierto()) {
+  <div class="alert alert-danger">
+    <span class="material-symbols-outlined">error</span>
+    <span>{{ mensajeError() }}</span>
+  </div>
+  }
+  @if (mensajeExito() && !modalAbierto()) {
+  <div class="alert alert-success">
+    <span class="material-symbols-outlined">check_circle</span>
+    <span>{{ mensajeExito() }}</span>
+  </div>
+  }
+
+  <!-- ── Master Material Card ─────────────────────────────────── -->
+  @if (cargando()) {
+  <div class="loading-state">
+    <span class="spinner-large"></span>
+    <p>Cargando ficha del material...</p>
+  </div>
+  } @else if (material()) {
+  <div class="material-info-card">
+    <div class="material-main-details">
+      <div class="material-avatar">
+        <span class="material-symbols-outlined">extension</span>
+      </div>
+      <div class="material-meta">
+        <span class="material-code-badge">{{ material()?.cod_materia }}</span>
+        <h2>{{ material()?.descripcion }}</h2>
+        <p>
+          Categoría: <strong>{{ material()?.nombre_categoria }}</strong> &nbsp;|&nbsp;
+          Unidad de Medida: <strong>{{ material()?.nombre_unidad }}</strong>
+        </p>
+      </div>
+    </div>
+    <div class="material-stock-display">
+      <span class="stock-label">Stock Actual Disponible</span>
+      <h1 class="stock-value" [class.stock-empty]="(material()?.stock || 0) <= 0">
+        {{ material()?.stock }}
+      </h1>
+      <span class="stock-unit">{{ material()?.nombre_unidad }}</span>
+    </div>
+  </div>
+  }
+
+  <!-- ── Historial del Kardex (Tabla) ───────────────────────── -->
+  <div class="table-card">
+    <div class="card-header-table">
+      <span class="material-symbols-outlined">history</span>
+      <h2>Movimientos de Kardex Registrados</h2>
+    </div>
+
+    @if (cargandoMovimientos()) {
+    <div class="table-loader">
+      <div class="spinner-lg"></div>
+      <p>Cargando historial de movimientos...</p>
+    </div>
+    } @else if (movimientos().length === 0) {
+    <div class="table-empty">
+      <span class="material-symbols-outlined empty-icon">assignment_late</span>
+      <p>No se registran movimientos en el Kardex para este material.</p>
+    </div>
+    } @else {
+    <div class="table-responsive">
+      <table class="kardex-table">
+        <thead>
+          <tr>
+            <th>Fecha y Hora</th>
+            <th>Tipo</th>
+            <th>Origen / Referencia</th>
+            <th>OT Ligada</th>
+            <th class="text-right">Cantidad</th>
+            <th class="text-right">Saldo en Stock</th>
+            <th>Responsable</th>
+            <th>Observaciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (mov of movimientos(); track mov.id_movimiento) {
+          <tr>
+            <td class="text-muted datetime-col">
+              {{ formatearFecha(mov.fecha) }}
+            </td>
+            <td>
+              <span class="mov-type-badge" [class.mov-entrada]="mov.tipo_movimiento === 'ENTRADA'"
+                [class.mov-salida]="mov.tipo_movimiento === 'SALIDA'">
+                {{ mov.tipo_movimiento }}
+              </span>
+            </td>
+            <td>
+              @if (mov.origen_tipo === 'NOTA_SALIDA') {
+              <div class="ref-container">
+                <span class="material-symbols-outlined ref-icon">outbox</span>
+                <span>Nota Salida ({{ mov.origen_referencia }})</span>
+              </div>
+              } @else if (mov.origen_tipo === 'ENTRADA_MANUAL') {
+              <div class="ref-container">
+                <span class="material-symbols-outlined ref-icon text-success">download</span>
+                <span>Entrada Manual</span>
+              </div>
+              } @else if (mov.origen_tipo === 'INICIAL') {
+              <div class="ref-container">
+                <span class="material-symbols-outlined ref-icon text-primary">inventory</span>
+                <span>Inventario Inicial</span>
+              </div>
+              } @else {
+              <span>{{ mov.origen_tipo }} ({{ mov.origen_referencia }})</span>
+              }
+            </td>
+            <td>
+              @if (mov.cod_ot) {
+              <span class="ot-link">{{ mov.cod_ot }}</span>
+              } @else {
+              <span class="text-muted italic">-</span>
+              }
+            </td>
+            <td class="text-right font-bold" [class.text-success]="mov.tipo_movimiento === 'ENTRADA'"
+              [class.text-danger]="mov.tipo_movimiento === 'SALIDA'">
+              {{ mov.tipo_movimiento === 'ENTRADA' ? '+' : '-' }}{{ mov.cantidad }}
+            </td>
+            <td class="text-right font-bold text-dark">
+              {{ mov.saldo_stock }}
+            </td>
+            <td>{{ mov.responsable }}</td>
+            <td class="obs-cell" [title]="mov.observaciones || ''">
+              {{ mov.observaciones || '-' }}
+            </td>
+          </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    }
+  </div>
+
+  <!-- ── MODAL: Registrar Entrada de Stock ────────────────────── -->
+  @if (modalAbierto()) {
+  <div class="modal-backdrop">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <div class="modal-title-group">
+          <span class="material-symbols-outlined modal-icon text-success">download</span>
+          <h3>Registrar Entrada de Stock</h3>
+        </div>
+        <button class="btn-close" (click)="cerrarModal()">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+
+      <div class="modal-body">
+        @if (mensajeError()) {
+        <div class="alert alert-danger no-margin-alert">
+          <span class="material-symbols-outlined">error</span>
+          <span>{{ mensajeError() }}</span>
+        </div>
+        }
+        @if (mensajeExito()) {
+        <div class="alert alert-success no-margin-alert">
+          <span class="material-symbols-outlined">check_circle</span>
+          <span>{{ mensajeExito() }}</span>
+        </div>
+        }
+
+        <div class="modal-form">
+          <!-- Material Info Simple -->
+          <div class="modal-material-summary">
+            <span>Material: <strong>{{ material()?.descripcion }}</strong></span>
+            <span>Código: <strong>{{ material()?.cod_materia }}</strong></span>
+          </div>
+
+          <!-- Cantidad -->
+          <div class="input-group">
+            <label for="cant_entrada">Cantidad a Ingresar *</label>
+            <input type="number" id="cant_entrada" [(ngModel)]="cantidadEntrada" placeholder="Ej. 10" min="0.01"
+              step="0.01" required />
+          </div>
+
+          <!-- Responsable (Lectura) -->
+          <div class="input-group">
+            <label for="resp_entrada">Responsable</label>
+            <input type="text" id="resp_entrada" [ngModel]="responsableEntrada()" readonly class="read-only-input" />
+          </div>
+
+          <!-- Observaciones -->
+          <div class="input-group">
+            <label for="obs_entrada">Observaciones / Motivo *</label>
+            <textarea id="obs_entrada" [(ngModel)]="observacionesEntrada"
+              placeholder="Ej. Compra de stock mensual, regularización por inventario..." rows="3" required></textarea>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn-secondary" (click)="cerrarModal()" [disabled]="guardandoEntrada()">
+          Cancelar
+        </button>
+        <button class="btn-primary" (click)="registrarEntrada()"
+          [disabled]="guardandoEntrada() || !cantidadEntrada() || (cantidadEntrada() ?? 0) <= 0 || !observacionesEntrada()">
+          @if (guardandoEntrada()) {
+          <span class="spinner"></span> Registrando...
+          } @else {
+          <span class="material-symbols-outlined">save</span> Registrar Entrada
+          }
+        </button>
+      </div>
+    </div>
+  </div>
+  }
+
+</div>

@@ -1,0 +1,171 @@
+<div class="page-wrapper">
+
+  <!-- ── Header ──────────────────────────────────────────────── -->
+  <div class="page-header">
+    <div class="page-title-group">
+      <button class="btn-back" (click)="volver()" title="Volver al expediente">
+        <span class="material-symbols-outlined">arrow_back</span>
+      </button>
+      <span class="material-symbols-outlined page-icon">picture_as_pdf</span>
+      <div>
+        <h1 class="page-title">Detalle de Documento</h1>
+        @if (documento()) {
+        <p class="page-subtitle">{{ documento()!.nombreTipoDocumento }}</p>
+        }
+      </div>
+    </div>
+
+    @if (documento()?.documentoUrl) {
+    <button class="btn-ghost" (click)="abrirEnNuevaVentana()">
+      <span class="material-symbols-outlined">open_in_new</span>
+      Abrir en nueva pestaña
+    </button>
+    }
+  </div>
+
+  <!-- ── Error general ─────────────────────────────────────────── -->
+  @if (errorMsg()) {
+  <div class="error-banner">
+    <span class="material-symbols-outlined">error</span>
+    {{ errorMsg() }}
+  </div>
+  }
+
+  <!-- ── Loader ─────────────────────────────────────────────────── -->
+  @if (cargando()) {
+  <div class="loader-center">
+    <span class="spinner-lg"></span>
+    <p>Cargando documento...</p>
+  </div>
+  }
+
+  @if (!cargando() && documento()) {
+  <div class="content-grid">
+
+    <!-- ── Panel de información ─────────────────────────────────── -->
+    <div class="info-panel">
+
+      <div class="info-section">
+        <h2 class="info-section-title">
+          <span class="material-symbols-outlined">info</span>
+          Información del Documento
+        </h2>
+
+        <div class="info-row">
+          <span class="info-lbl">Tipo</span>
+          <span class="info-val">{{ documento()!.nombreTipoDocumento }}</span>
+        </div>
+        <div class="info-row">
+          <span class="info-lbl">Código</span>
+          <span class="code-badge">{{ documento()!.codTipoDocumentoEmp }}</span>
+        </div>
+        <div class="info-row">
+          <span class="info-lbl">Expediente</span>
+          <span class="code-badge">{{ documento()!.codigoExpEmp }}</span>
+        </div>
+        <div class="info-row">
+          <span class="info-lbl">Estado</span>
+          <span class="doc-badge" [ngClass]="badgeVencido(documento()!)">
+            {{ textoVencimiento(documento()!) }}
+          </span>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="info-section">
+        <h2 class="info-section-title">
+          <span class="material-symbols-outlined">calendar_month</span>
+          Fechas
+        </h2>
+
+        <div class="date-card date-registro">
+          <span class="material-symbols-outlined">event_available</span>
+          <div>
+            <span class="date-lbl">Fecha de Registro</span>
+            <span class="date-val">{{ documento()!.fechaRegistro | date:'dd/MM/yyyy' }}</span>
+          </div>
+        </div>
+
+        <div class="date-card" [ngClass]="documento()!.estaVencido ? 'date-vencido' : 'date-vencimiento'">
+          <span class="material-symbols-outlined">{{ documento()!.estaVencido ? 'event_busy' : 'event' }}</span>
+          <div>
+            <span class="date-lbl">Fecha de Vencimiento</span>
+            @if (documento()!.fechaVencimiento) {
+              <span class="date-val">{{ documento()!.fechaVencimiento | date:'dd/MM/yyyy' }}</span>
+            } @else {
+              <span class="date-val" style="color: #64748b; font-style: italic;">Sin vencimiento</span>
+            }
+          </div>
+        </div>
+      </div>
+
+      @if (documento()!.documentoUrl) {
+      <div class="divider"></div>
+      <div class="url-section">
+        <span class="url-label">URL del PDF</span>
+        <a [href]="documento()!.documentoUrl" target="_blank" class="url-link">
+          <span class="material-symbols-outlined">link</span>
+          {{ documento()!.documentoUrl | slice:0:45 }}{{ documento()!.documentoUrl.length > 45 ? '...' : '' }}
+        </a>
+      </div>
+      }
+
+    </div>
+
+    <!-- ── Visor PDF ─────────────────────────────────────────────── -->
+    <div class="pdf-panel">
+      <div class="pdf-header">
+        <span class="material-symbols-outlined">picture_as_pdf</span>
+        <span>Visor de Documento PDF</span>
+      </div>
+
+      @if (!documento()!.documentoUrl) {
+      <!-- Sin URL -->
+      <div class="pdf-empty">
+        <span class="material-symbols-outlined">link_off</span>
+        <h3>Sin documento adjunto</h3>
+        <p>Este registro no tiene una URL de documento PDF asociada.</p>
+      </div>
+
+      } @else {
+      <!-- Con URL -->
+      <div class="pdf-viewer-wrapper">
+
+        @if (pdfCargando()) {
+        <div class="pdf-loading">
+          <span class="spinner-lg"></span>
+          <p>Cargando PDF...</p>
+        </div>
+        }
+
+        @if (pdfError()) {
+        <div class="pdf-error">
+          <span class="material-symbols-outlined">error_outline</span>
+          <h3>No se pudo cargar el PDF</h3>
+          <p>El navegador no pudo renderizar el documento. Intente abrirlo en una nueva pestaña.</p>
+          <button class="btn-primary" (click)="abrirEnNuevaVentana()">
+            <span class="material-symbols-outlined">open_in_new</span>
+            Abrir en nueva pestaña
+          </button>
+        </div>
+        }
+
+        <iframe
+          [src]="pdfUrl()"
+          class="pdf-iframe"
+          [class.pdf-hidden]="pdfCargando() || pdfError()"
+          (load)="onPdfLoad()"
+          (error)="onPdfError()"
+          title="Visor de documento PDF"
+          type="application/pdf"
+          allowfullscreen>
+        </iframe>
+      </div>
+      }
+    </div>
+
+  </div>
+  }
+
+</div>

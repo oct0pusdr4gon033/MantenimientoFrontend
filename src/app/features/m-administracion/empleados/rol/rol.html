@@ -1,0 +1,135 @@
+<div class="page-wrapper">
+  <!-- Header -->
+  <div class="page-header">
+    <div class="page-title-group">
+      <span class="material-symbols-outlined page-icon">admin_panel_settings</span>
+      <div>
+        <h1 class="page-title">Gestión de Roles</h1>
+        <p class="page-subtitle">Administra los roles y perfiles de acceso del sistema</p>
+      </div>
+    </div>
+    <div class="header-actions">
+      <button class="btn-primary" (click)="abrirModalNuevo()">
+        <span class="material-symbols-outlined">add</span>
+        Nuevo Rol
+      </button>
+    </div>
+  </div>
+
+  <!-- Contenido Principal -->
+  <div class="table-card">
+    @if (cargando()) {
+      <div class="table-loader">
+        <div class="spinner-lg"></div>
+        <span>Cargando roles...</span>
+      </div>
+    } @else if (roles().length === 0) {
+      <div class="table-empty">
+        <span class="material-symbols-outlined empty-icon">assignment_ind</span>
+        <p>No hay roles registrados en el sistema.</p>
+        <button class="btn-ghost" (click)="abrirModalNuevo()">Registrar el primer rol</button>
+      </div>
+    } @else {
+      <div class="table-responsive">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th class="col-index">ID</th>
+              <th>Nombre del Rol</th>
+              <th>Prefijo / Código</th>
+              <th class="col-actions">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (rol of roles(); track rol.id_rol) {
+              <tr>
+                <td class="text-muted-sm">#{{ rol.id_rol }}</td>
+                <td>
+                  <div class="cell-main">{{ rol.nombre_rol }}</div>
+                </td>
+                <td>
+                  <span class="code-badge">{{ rol.prefijo }}</span>
+                </td>
+                <td>
+                  <div class="actions-group">
+                    <button class="btn-icon btn-edit" title="Editar" (click)="abrirModalEditar(rol)">
+                      <span class="material-symbols-outlined">edit</span>
+                    </button>
+                    <button class="btn-icon btn-delete" title="Eliminar" (click)="eliminar(rol)">
+                      <span class="material-symbols-outlined">delete</span>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </div>
+</div>
+
+<!-- Modal Formulario -->
+@if (modalVisible()) {
+  <div class="modal-backdrop">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div class="modal-title-group">
+          <span class="material-symbols-outlined modal-icon">admin_panel_settings</span>
+          <h3 class="modal-title">{{ modoEdicion() ? 'Editar Rol' : 'Nuevo Rol' }}</h3>
+        </div>
+        <button class="modal-close" (click)="cerrarModal()">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+
+      <div class="modal-body">
+        <form [formGroup]="rolForm" class="form-group">
+          
+          <div class="form-group">
+            <label>Nombre del Rol *</label>
+            <div class="input-wrapper">
+              <span class="material-symbols-outlined input-icon">badge</span>
+              <input type="text" formControlName="nombre_rol" placeholder="Ej: Administrador, Jefe de Flota..." />
+            </div>
+            @if (rolForm.get('nombre_rol')?.invalid && rolForm.get('nombre_rol')?.touched) {
+              <div class="form-error-alert">
+                <span class="material-symbols-outlined">error</span>
+                <span>El nombre es obligatorio.</span>
+              </div>
+            }
+          </div>
+
+          <div class="form-group">
+            <label>Prefijo del Rol *</label>
+            <div class="input-wrapper">
+              <span class="material-symbols-outlined input-icon">tag</span>
+              <input type="text" formControlName="prefijo" placeholder="Ej: ADMIN, JEF_FLOTA..." style="text-transform: uppercase;" />
+            </div>
+            <span class="field-hint">Código corto identificativo.</span>
+            @if (rolForm.get('prefijo')?.invalid && rolForm.get('prefijo')?.touched) {
+              <div class="form-error-alert">
+                <span class="material-symbols-outlined">error</span>
+                <span>El prefijo es obligatorio.</span>
+              </div>
+            }
+          </div>
+
+        </form>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn-ghost" (click)="cerrarModal()" [disabled]="guardando()">Cancelar</button>
+        <button class="btn-primary" (click)="guardar()" [disabled]="rolForm.invalid || guardando()">
+          @if (guardando()) {
+            <div class="spinner-sm spinner-white"></div>
+            <span>Guardando...</span>
+          } @else {
+            <span class="material-symbols-outlined">save</span>
+            <span>Guardar Rol</span>
+          }
+        </button>
+      </div>
+    </div>
+  </div>
+}

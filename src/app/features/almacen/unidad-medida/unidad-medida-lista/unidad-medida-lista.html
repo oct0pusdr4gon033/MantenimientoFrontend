@@ -1,0 +1,175 @@
+<div class="page-wrapper">
+
+  <!-- ── Header de página ──────────────────────────────────── -->
+  <div class="page-header">
+    <div class="page-title-group">
+      <span class="material-symbols-outlined page-icon">square_foot</span>
+      <div>
+        <h1 class="page-title">Unidades de Medida</h1>
+        <p class="page-subtitle">Gestión y administración de las unidades de medida de los materiales</p>
+      </div>
+    </div>
+    <button class="btn-primary" (click)="abrirCrear()">
+      <span class="material-symbols-outlined">add</span>
+      Nueva Unidad
+    </button>
+  </div>
+
+  <!-- ── Toast notificaciones ──────────────────────────────── -->
+  @if (mensajeExito) {
+  <div class="toast toast-success">
+    <span class="material-symbols-outlined">check_circle</span>
+    {{ mensajeExito }}
+  </div>
+  }
+  @if (mensajeError && !modalMode()) {
+  <div class="toast toast-error">
+    <span class="material-symbols-outlined">error</span>
+    {{ mensajeError }}
+  </div>
+  }
+
+  <!-- ── Barra de filtros ───────────────────────────────────── -->
+  <div class="filter-bar">
+    <div class="search-wrapper">
+      <span class="material-symbols-outlined search-icon">search</span>
+      <input id="filtro-busqueda" type="text" class="search-input" placeholder="Buscar por nombre o abreviatura..."
+        [value]="filtroBusqueda()" (input)="onFiltroChange($any($event.target).value)" />
+      @if (filtroBusqueda()) {
+      <button class="clear-btn" (click)="limpiarFiltro()" title="Limpiar búsqueda">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+      }
+    </div>
+    <div class="filter-stats">
+      <span class="badge-count">{{ unidadesFiltradas().length }} resultado(s)</span>
+    </div>
+  </div>
+
+  <!-- ── Tabla ─────────────────────────────────────────────── -->
+  <div class="table-card">
+
+    @if (cargando()) {
+    <div class="table-loader">
+      <span class="spinner-lg"></span>
+      <p>Cargando unidades de medida...</p>
+    </div>
+    } @else if (unidadesFiltradas().length === 0) {
+    <div class="table-empty">
+      <span class="material-symbols-outlined empty-icon">search_off</span>
+      <p>No se encontraron unidades de medida.</p>
+      @if (filtroBusqueda()) {
+      <button class="btn-ghost" (click)="limpiarFiltro()">Limpiar filtro</button>
+      } @else {
+      <button class="btn-primary" (click)="abrirCrear()">Crear primera unidad</button>
+      }
+    </div>
+    } @else {
+    <div class="table-responsive">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th class="col-index">#</th>
+            <th>Nombre de Unidad</th>
+            <th>Abreviatura</th>
+            <th class="col-actions" style="text-align: center;">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (unidad of unidadesFiltradas(); track unidad.id_unidad; let i = $index) {
+          <tr>
+            <td class="col-index text-muted">{{ i + 1 }}</td>
+            <td>
+              <span class="area-nombre">{{ unidad.nombre_unidad }}</span>
+            </td>
+            <td>
+              <span class="code-badge">{{ unidad.abreviatura }}</span>
+            </td>
+            <td class="col-actions" style="display: flex; justify-content: center; align-items: center;">
+              <div class="actions-group">
+                <button class="btn-icon btn-edit" (click)="abrirEditar(unidad)" title="Editar">
+                  <span class="material-symbols-outlined">edit</span>
+                </button>
+              </div>
+            </td>
+          </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    }
+
+  </div>
+
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- Modal Crear / Editar                                    -->
+<!-- ═══════════════════════════════════════════════════════ -->
+@if (modalMode()) {
+<div class="modal-backdrop" (click)="cerrarModal()">
+  <div class="modal-card" (click)="$event.stopPropagation()">
+
+    <div class="modal-header">
+      <div class="modal-title-group">
+        <span class="material-symbols-outlined modal-icon">
+          {{ modalMode() === 'crear' ? 'add_circle' : 'edit' }}
+        </span>
+        <h2 class="modal-title">
+          {{ modalMode() === 'crear' ? 'Nueva Unidad de Medida' : 'Editar Unidad de Medida' }}
+        </h2>
+      </div>
+      <button class="modal-close" (click)="cerrarModal()">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+
+    <div class="modal-body" style="max-height: 65vh; overflow-y: auto;">
+
+      @if (mensajeError) {
+      <div class="form-error-alert">
+        <span class="material-symbols-outlined">error</span>
+        {{ mensajeError }}
+      </div>
+      }
+
+      <div class="form-group">
+        <label for="form-nombre">Nombre de Unidad</label>
+        <div class="input-wrapper">
+          <span class="input-icon material-symbols-outlined">straighten</span>
+          <input id="form-nombre" type="text" [(ngModel)]="form.nombre_unidad" name="nombre_unidad"
+            placeholder="Ej: Kilogramos, Metros, Galones" maxlength="100" />
+        </div>
+        <span class="field-hint">Nombre descriptivo de la unidad de medida. Máx. 100 caracteres.</span>
+      </div>
+
+      <div class="form-group">
+        <label for="form-abreviatura">Abreviatura</label>
+        <div class="input-wrapper">
+          <span class="input-icon material-symbols-outlined">title</span>
+          <input id="form-abreviatura" type="text" [(ngModel)]="form.abreviatura" name="abreviatura"
+            placeholder="Ej: KG, M, GL" maxlength="10" style="text-transform: uppercase;" />
+        </div>
+        <span class="field-hint">Abreviatura o sigla representativa (Ej: UND, LT, M3). Máx. 10 caracteres.</span>
+      </div>
+
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn-ghost" (click)="cerrarModal()" [disabled]="guardando()">
+        Cancelar
+      </button>
+      <button class="btn-primary" (click)="guardar()" [disabled]="guardando()">
+        @if (guardando()) {
+        <span class="spinner-sm spinner-white"></span>
+        Guardando...
+        } @else {
+        <span class="material-symbols-outlined">save</span>
+        {{ modalMode() === 'crear' ? 'Crear Unidad' : 'Guardar Cambios' }}
+        }
+      </button>
+    </div>
+
+  </div>
+</div>
+}

@@ -1,0 +1,199 @@
+<div class="page-wrapper">
+  <header class="page-header">
+    <div class="page-title-group">
+      <button class="btn-ghost" (click)="cancelar()" style="padding: 0.4rem; border: none;">
+        <span class="material-symbols-outlined">arrow_back</span>
+      </button>
+      <span class="material-symbols-outlined page-icon" style="color: #e86b1a;">shopping_cart</span>
+      <div>
+        <h1 class="page-title">Nueva Orden de Compra Manual</h1>
+        <p class="page-subtitle">Crea una orden directamente desde un proveedor y materiales específicos.</p>
+      </div>
+    </div>
+    <div style="display: flex; gap: 0.75rem;">
+      <button class="btn-ghost" (click)="cancelar()">Cancelar</button>
+      <button class="btn-primary" (click)="guardar()" [disabled]="submitting() || ordenForm.invalid || detallesFormArray.length === 0"
+        style="background: linear-gradient(135deg, #10b981, #059669); box-shadow: 0 3px 12px rgba(16, 185, 129, 0.3);">
+        @if (submitting()) { <span class="spinner-sm spinner-white"></span> }
+        <span class="material-symbols-outlined" *ngIf="!submitting()">save</span>
+        Guardar Orden
+      </button>
+    </div>
+  </header>
+
+  @if (errorMessage()) {
+    <div class="toast toast-error" style="margin-bottom: 1rem;">
+      <span class="material-symbols-outlined">error</span>
+      <span>{{ errorMessage() }}</span>
+    </div>
+  }
+
+  <form [formGroup]="ordenForm" class="form-grid">
+    <!-- Cabecera -->
+    <section class="form-section">
+      <h3 class="section-title">Datos de la Orden</h3>
+      
+      <div class="form-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
+        <!-- Proveedor -->
+        <div class="form-group">
+          <label>Proveedor <span style="color: #ef4444;">*</span></label>
+          <div class="input-wrapper" [class.input-error]="ordenForm.get('ruc_proveedor')?.invalid && ordenForm.get('ruc_proveedor')?.touched">
+            <span class="material-symbols-outlined input-icon">store</span>
+            <select formControlName="ruc_proveedor" class="filter-select" style="border: none; background-color: transparent;">
+              <option value="">Seleccione un Proveedor...</option>
+              @for (p of proveedores(); track p.ruc) {
+                <option [value]="p.ruc">{{ p.razon_social }} ({{ p.ruc }})</option>
+              }
+            </select>
+          </div>
+          @if (ordenForm.get('ruc_proveedor')?.invalid && ordenForm.get('ruc_proveedor')?.touched) {
+            <span class="field-hint" style="color: #ef4444;">El proveedor es obligatorio.</span>
+          }
+        </div>
+
+        <!-- Cotizacion Base (Opcional) -->
+        <div class="form-group">
+          <label>Cotización Base (Opcional)</label>
+          <div class="input-wrapper">
+            <span class="material-symbols-outlined input-icon">request_quote</span>
+            <select formControlName="id_cotizacion" class="filter-select" style="border: none; background-color: transparent;">
+              <option [ngValue]="null">-- Ninguna (Manual) --</option>
+              @for (c of cotizacionesActivas(); track c.id_cotizacion) {
+                <option [value]="c.id_cotizacion">{{ c.nro_cotizacion }} - {{ c.razon_social_proveedor }}</option>
+              }
+            </select>
+          </div>
+          <span class="field-hint">Si la orden proviene de una cotización existente, selecciónela aquí.</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Detalles -->
+    <section class="form-section">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+        <h3 class="section-title" style="margin: 0;">Materiales a Comprar</h3>
+        <button type="button" class="btn-primary" (click)="abrirModalMaterial()"
+          style="padding: 0.5rem 1rem; font-size: 0.8rem; background: #e86b1a;">
+          <span class="material-symbols-outlined" style="font-size: 1.1rem;">add</span>
+          Agregar Material
+        </button>
+      </div>
+
+      <div class="table-responsive" style="border: 1px solid #e5e7eb; border-radius: 8px;">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th class="col-index">#</th>
+              <th>Cód.</th>
+              <th>Descripción</th>
+              <th style="width: 120px;">Cantidad</th>
+              <th style="width: 150px;">Precio Unit. (S/.)</th>
+              <th style="text-align: right;">Subtotal</th>
+              <th class="col-actions"></th>
+            </tr>
+          </thead>
+          <tbody formArrayName="detalles">
+            @for (ctrl of detallesFormArray.controls; track $index; let i = $index) {
+              <tr [formGroupName]="i">
+                <td class="col-index text-muted">{{ i + 1 }}</td>
+                <td><span class="code-badge" style="color: #e86b1a; border-color: rgba(232, 107, 26, 0.3);">{{ ctrl.get('cod_materia')?.value }}</span></td>
+                <td style="font-weight: 500;">{{ ctrl.get('descripcion')?.value }}</td>
+                <td>
+                  <input type="number" formControlName="cantidad" class="inline-input" min="0.01" step="1">
+                </td>
+                <td>
+                  <input type="number" formControlName="precio_unitario" class="inline-input" min="0" step="0.01">
+                </td>
+                <td style="text-align: right; font-weight: 600;">
+                  {{ ctrl.get('subtotal')?.value | currency:'PEN':'symbol-narrow' }}
+                </td>
+                <td class="col-actions text-center">
+                  <button type="button" class="btn-icon" style="color: #ef4444; background: rgba(239, 68, 68, 0.1);"
+                    (click)="removerDetalle(i)">
+                    <span class="material-symbols-outlined">delete</span>
+                  </button>
+                </td>
+              </tr>
+            }
+            @if (detallesFormArray.length === 0) {
+              <tr>
+                <td colspan="7" class="text-center text-muted" style="padding: 2rem;">
+                  No hay materiales agregados. Haz clic en "Agregar Material".
+                </td>
+              </tr>
+            }
+          </tbody>
+          @if (detallesFormArray.length > 0) {
+            <tfoot>
+              <tr style="background: #f9fafb;">
+                <td colspan="4"></td>
+                <td style="text-align: right; font-weight: 700;">TOTAL ORDEN:</td>
+                <td style="text-align: right; font-weight: 800; font-size: 1.1rem; color: #1a1a2e;">
+                  {{ totalOrden | currency:'PEN':'symbol-narrow' }}
+                </td>
+                <td></td>
+              </tr>
+            </tfoot>
+          }
+        </table>
+      </div>
+    </section>
+  </form>
+</div>
+
+<!-- Modal Selección de Material -->
+@if (showMaterialModal()) {
+  <div class="modal-backdrop" (click)="cerrarModalMaterial()">
+    <div class="modal-card" (click)="$event.stopPropagation()" style="max-width: 600px;">
+      <header class="modal-header">
+        <div class="modal-title-group">
+          <span class="material-symbols-outlined modal-icon">inventory_2</span>
+          <h2 class="modal-title">Seleccionar Material</h2>
+        </div>
+        <button class="modal-close" (click)="cerrarModalMaterial()">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </header>
+      <div class="modal-body" style="padding: 1rem;">
+        <div class="search-wrapper" style="margin-bottom: 1rem;">
+          <span class="material-symbols-outlined search-icon">search</span>
+          <input type="text" class="search-input" placeholder="Buscar por código o descripción..." 
+            (input)="filtrarMateriales($event)">
+        </div>
+
+        <div style="max-height: 400px; overflow-y: auto; border: 1px solid #e5e7eb; border-radius: 8px;">
+          <table class="data-table" style="margin: 0;">
+            <thead style="position: sticky; top: 0; z-index: 1;">
+              <tr>
+                <th>Código</th>
+                <th>Descripción</th>
+                <th>Acción</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (m of materialesFiltrados(); track m.id_material) {
+                <tr>
+                  <td><span class="code-badge" style="color: #6b7280; border-color: #d1d5db;">{{ m.cod_materia }}</span></td>
+                  <td>{{ m.descripcion }}</td>
+                  <td style="width: 80px; text-align: center;">
+                    <button type="button" class="btn-icon" style="color: #e86b1a; background: rgba(232, 107, 26, 0.1);"
+                      (click)="seleccionarMaterial(m)" title="Agregar">
+                      <span class="material-symbols-outlined">add_circle</span>
+                    </button>
+                  </td>
+                </tr>
+              }
+              @if (materialesFiltrados().length === 0) {
+                <tr>
+                  <td colspan="3" class="text-center text-muted" style="padding: 1.5rem;">
+                    No se encontraron materiales.
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+}

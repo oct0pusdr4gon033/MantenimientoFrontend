@@ -1,0 +1,549 @@
+<div class="page-wrapper">
+
+  <!-- ══ HEADER ══════════════════════════════════════════════════ -->
+  <header class="page-header">
+    <div class="page-title-group">
+      <button class="btn-icon-back" (click)="cancelar()">
+        <span class="material-symbols-outlined">arrow_back</span>
+      </button>
+      <span class="material-symbols-outlined page-icon">assignment_add</span>
+      <div>
+        <h1 class="page-title">Nueva Solicitud de Pedido</h1>
+        <p class="page-subtitle">Completa los tres pasos para generar la solicitud.</p>
+      </div>
+    </div>
+  </header>
+
+  <!-- ══ TOASTS ═══════════════════════════════════════════════════ -->
+  @if (successMsg()) {
+    <div class="toast toast-success">
+      <span class="material-symbols-outlined">check_circle</span>
+      <span>{{ successMsg() }}</span>
+    </div>
+  }
+  @if (errorMessage()) {
+    <div class="toast toast-error">
+      <span class="material-symbols-outlined">error</span>
+      <span>{{ errorMessage() }}</span>
+    </div>
+  }
+
+  <!-- ══ PASO 1: SOLICITANTE ══════════════════════════════════════ -->
+  <section class="card">
+    <div class="card-header">
+      <div class="step-badge">1</div>
+      <div>
+        <h2 class="card-title">Datos del Solicitante</h2>
+        <p class="card-subtitle">Información del empleado que genera la solicitud.</p>
+      </div>
+    </div>
+    <div class="card-body">
+
+      @if (usuarioActual()) {
+        <div class="user-card" style="margin-bottom: 1.25rem;">
+          <!-- Avatar inicial -->
+          <div class="user-avatar">
+            {{ usuarioActual()!.nombre.charAt(0) }}{{ usuarioActual()!.apellido1.charAt(0) }}
+          </div>
+          <!-- Datos -->
+          <div class="user-info">
+            <div class="user-name">
+              {{ usuarioActual()!.nombre }}
+              {{ usuarioActual()!.apellido1 }}
+              {{ usuarioActual()!.apellido2 }}
+            </div>
+            <div class="user-meta-row">
+              <span class="user-meta-item">
+                <span class="material-symbols-outlined">work</span>
+                {{ usuarioActual()!.cargo }}
+              </span>
+              <span class="user-meta-sep">·</span>
+              <span class="user-meta-item">
+                <span class="material-symbols-outlined">mail</span>
+                {{ usuarioActual()!.email }}
+              </span>
+            </div>
+          </div>
+          <span class="user-verified-badge">
+            <span class="material-symbols-outlined">verified_user</span>
+            Sesión activa
+          </span>
+        </div>
+      } @else {
+        <div class="user-card-error" style="margin-bottom: 1.25rem;">
+          <span class="material-symbols-outlined">warning</span>
+          No se pudo cargar la información del usuario. Por favor <a href="/login">reinicia sesión</a>.
+        </div>
+      }
+
+      <form [formGroup]="cabForm">
+        <div class="field-group" style="max-width: 320px;">
+          <label class="field-label">DNI del Empleado <span class="required">*</span></label>
+          <div class="input-wrapper" [class.input-error]="isInvalid(cabForm,'dni_empleado')" [class.input-disabled]="!!usuarioActual()?.dni">
+            <span class="material-symbols-outlined input-icon">badge</span>
+            <input type="text" formControlName="dni_empleado" maxlength="8" placeholder="12345678" [readonly]="!!usuarioActual()?.dni">
+          </div>
+          @if (isInvalid(cabForm,'dni_empleado')) {
+            <span class="field-error">DNI requerido (8 dígitos numéricos).</span>
+          }
+          @if (usuarioActual()?.dni) {
+            <span class="field-hint" style="margin-top:0.25rem;">Extraído automáticamente de tu sesión.</span>
+          } @else {
+            <span class="field-hint" style="margin-top:0.25rem;">Por favor, ingresa tu DNI para validar la solicitud.</span>
+          }
+        </div>
+      </form>
+
+    </div>
+  </section>
+
+
+  <!-- ══ PASO 2: PROVEEDOR ════════════════════════════════════════ -->
+  <section class="card">
+    <div class="card-header">
+      <div class="step-badge step-badge--indigo">2</div>
+      <div>
+        <h2 class="card-title">Proveedor de Referencia</h2>
+        <p class="card-subtitle">Busca por RUC. Si no está registrado, completa el formulario para registrarlo.</p>
+      </div>
+    </div>
+    <div class="card-body">
+
+      <!-- Buscador de RUC -->
+      <div class="ruc-search-row">
+        <div class="input-wrapper" style="flex:1; max-width: 360px;">
+          <span class="material-symbols-outlined input-icon">search</span>
+          <input type="text" [formControl]="$any(provForm.get('ruc_buscar'))"
+                 placeholder="Buscar por RUC (11 dígitos)" maxlength="11"
+                 (keyup.enter)="buscarProveedor()">
+        </div>
+        <button class="btn-secondary" (click)="buscarProveedor()" [disabled]="buscandoRuc()">
+          @if (buscandoRuc()) { <span class="spinner-sm"></span> }
+          @else { <span class="material-symbols-outlined">manage_search</span> }
+          Verificar RUC
+        </button>
+        @if (proveedorVerificado()) {
+          <button class="btn-ghost-sm" (click)="limpiarProveedor()">
+            <span class="material-symbols-outlined">close</span> Cambiar
+          </button>
+        }
+      </div>
+
+      <!-- Proveedor encontrado -->
+      @if (proveedorVerificado()) {
+        <div class="prov-found-card">
+          <span class="material-symbols-outlined prov-found-icon">verified</span>
+          <div>
+            <p class="prov-found-name">{{ proveedorVerificado()!.razon_social }}</p>
+            <p class="prov-found-meta">RUC: {{ proveedorVerificado()!.ruc }}
+              @if (proveedorVerificado()!.telefono) { &nbsp;·&nbsp; Tel: {{ proveedorVerificado()!.telefono }} }
+              @if (proveedorVerificado()!.correo) { &nbsp;·&nbsp; {{ proveedorVerificado()!.correo }} }
+            </p>
+          </div>
+        </div>
+      }
+
+      <!-- Formulario de registro de nuevo proveedor -->
+      @if (mostrarFormProveedor()) {
+        <div class="new-prov-panel">
+          <div class="new-prov-header">
+            <span class="material-symbols-outlined" style="color:#f59e0b;">warning</span>
+            <span>RUC no registrado — completa los datos para registrar el proveedor</span>
+          </div>
+
+          <form [formGroup]="provForm" class="form-grid">
+            <!-- RUC (readonly ya que viene del buscar) -->
+            <div class="field-group">
+              <label class="field-label">RUC <span class="required">*</span></label>
+              <div class="input-wrapper">
+                <span class="material-symbols-outlined input-icon">tag</span>
+                <input type="text" formControlName="ruc" maxlength="11" readonly style="cursor:not-allowed;">
+              </div>
+            </div>
+
+            <!-- Razón Social -->
+            <div class="field-group">
+              <label class="field-label">Razón Social <span class="required">*</span></label>
+              <div class="input-wrapper" [class.input-error]="isInvalid(provForm,'razon_social')">
+                <span class="material-symbols-outlined input-icon">business</span>
+                <input type="text" formControlName="razon_social" placeholder="Empresa S.A.C.">
+              </div>
+              @if (isInvalid(provForm,'razon_social')) {
+                <span class="field-error">Requerido.</span>
+              }
+            </div>
+
+            <!-- Nombre Comercial -->
+            <div class="field-group">
+              <label class="field-label">Nombre Comercial</label>
+              <div class="input-wrapper">
+                <span class="material-symbols-outlined input-icon">storefront</span>
+                <input type="text" formControlName="nombre_comercial" placeholder="Opcional">
+              </div>
+            </div>
+
+            <!-- Dirección -->
+            <div class="field-group">
+              <label class="field-label">Dirección</label>
+              <div class="input-wrapper">
+                <span class="material-symbols-outlined input-icon">location_on</span>
+                <input type="text" formControlName="direccion" placeholder="Av. Ejemplo 123">
+              </div>
+            </div>
+
+            <!-- Correo -->
+            <div class="field-group">
+              <label class="field-label">Correo</label>
+              <div class="input-wrapper" [class.input-error]="isInvalid(provForm,'correo')">
+                <span class="material-symbols-outlined input-icon">mail</span>
+                <input type="email" formControlName="correo" placeholder="contacto@empresa.com">
+              </div>
+              @if (isInvalid(provForm,'correo')) {
+                <span class="field-error">Correo inválido.</span>
+              }
+            </div>
+
+            <!-- Teléfono -->
+            <div class="field-group">
+              <label class="field-label">Teléfono</label>
+              <div class="input-wrapper">
+                <span class="material-symbols-outlined input-icon">phone</span>
+                <input type="text" formControlName="telefono" placeholder="987654321">
+              </div>
+            </div>
+          </form>
+
+          <div style="display:flex; justify-content:flex-end; margin-top:1rem;">
+            <button class="btn-success" (click)="registrarProveedor()">
+              <span class="material-symbols-outlined">save</span>
+              Registrar Proveedor
+            </button>
+          </div>
+        </div>
+      }
+
+    </div>
+  </section>
+
+  <!-- ══ PASO 3: PRODUCTO ═════════════════════════════════════════ -->
+  <section class="card">
+    <div class="card-header">
+      <div class="step-badge step-badge--green">3</div>
+      <div>
+        <h2 class="card-title">Registrar Producto</h2>
+        <p class="card-subtitle">Selecciona del catálogo o registra un producto nuevo y agrégalo a la tabla.</p>
+      </div>
+    </div>
+    <div class="card-body" style="display:flex; flex-direction:column; gap:1.25rem;">
+
+      <!-- Toggle modo -->
+      <div class="mode-toggle">
+        <button class="mode-btn" [class.mode-btn--active]="!modoNuevo()" (click)="usarCatalogo()">
+          <span class="material-symbols-outlined">inventory_2</span>
+          Desde catálogo
+        </button>
+        <button class="mode-btn" [class.mode-btn--active]="modoNuevo()" (click)="usarNuevo()">
+          <span class="material-symbols-outlined">add_box</span>
+          Nuevo producto
+        </button>
+      </div>
+
+      <!-- Botón de selección del catálogo -->
+      @if (!modoNuevo()) {
+        <div class="catalog-picker">
+          @if (materialSeleccionado()) {
+            <div class="mat-selected-card">
+              <span class="material-symbols-outlined" style="color:#6366f1;">check_circle</span>
+              <div>
+                <p style="font-weight:700; margin:0; color:#1f2937;">{{ materialSeleccionado()!.descripcion }}</p>
+                <p style="font-size:0.78rem; color:#6b7280; margin:0;">
+                  Cód: {{ materialSeleccionado()!.cod_materia }} &nbsp;·&nbsp;
+                  {{ materialSeleccionado()!.nombre_unidad }}
+                </p>
+              </div>
+              <button class="btn-ghost-sm" (click)="abrirModalMaterial()">
+                <span class="material-symbols-outlined">edit</span> Cambiar
+              </button>
+            </div>
+          } @else {
+            <button class="btn-catalog" (click)="abrirModalMaterial()">
+              <span class="material-symbols-outlined">search</span>
+              Seleccionar del catálogo de materiales
+            </button>
+          }
+        </div>
+      }
+
+      <!-- Formulario del producto -->
+      <form [formGroup]="prodForm" class="form-grid">
+
+        @if (modoNuevo()) {
+          <!-- Código (solo nuevo) -->
+          <div class="field-group">
+            <label class="field-label">Código (opcional)</label>
+            <div class="input-wrapper">
+              <span class="material-symbols-outlined input-icon">qr_code</span>
+              <input type="text" formControlName="cod_materia" placeholder="COD-001">
+            </div>
+          </div>
+        }
+
+        <!-- Nombre / Descripción -->
+        <div class="field-group" [class.full-width]="!modoNuevo()">
+          <label class="field-label">Nombre / Descripción <span class="required">*</span></label>
+          <div class="input-wrapper" [class.input-error]="isInvalid(prodForm,'nombre')">
+            <span class="material-symbols-outlined input-icon">description</span>
+            <input type="text" formControlName="nombre" placeholder="Ej. Aceite hidráulico ISO 46"
+                   [readonly]="!modoNuevo() && !!materialSeleccionado()">
+          </div>
+          @if (isInvalid(prodForm,'nombre')) {
+            <span class="field-error">Requerido.</span>
+          }
+        </div>
+
+        <!-- Categoría -->
+        <div class="field-group">
+          <label class="field-label">Categoría <span class="required">*</span></label>
+          <select class="filter-select" formControlName="id_categoria"
+                  [class.input-error]="isInvalid(prodForm,'id_categoria')">
+            <option [ngValue]="null">-- Seleccionar --</option>
+            @for (c of categorias(); track c.id_categoria) {
+              <option [ngValue]="c.id_categoria">{{ c.nombre_categoria }}</option>
+            }
+          </select>
+          @if (isInvalid(prodForm,'id_categoria')) {
+            <span class="field-error">Requerido.</span>
+          }
+        </div>
+
+        <!-- Unidad de medida -->
+        <div class="field-group">
+          <label class="field-label">Unidad de Medida <span class="required">*</span></label>
+          <select class="filter-select" formControlName="id_unidad"
+                  [class.input-error]="isInvalid(prodForm,'id_unidad')">
+            <option [ngValue]="null">-- Seleccionar --</option>
+            @for (u of unidades(); track u.id_unidad) {
+              <option [ngValue]="u.id_unidad">{{ u.nombre_unidad }} ({{ u.abreviatura }})</option>
+            }
+          </select>
+          @if (isInvalid(prodForm,'id_unidad')) {
+            <span class="field-error">Requerido.</span>
+          }
+        </div>
+
+        <!-- Stock Mínimo -->
+        <div class="field-group">
+          <label class="field-label">Stock Mínimo</label>
+          <div class="input-wrapper">
+            <span class="material-symbols-outlined input-icon">inventory</span>
+            <input type="number" formControlName="stock_minimo" min="0" placeholder="0">
+          </div>
+        </div>
+
+        <!-- Cantidad Pedida -->
+        <div class="field-group">
+          <label class="field-label">Cantidad Pedida <span class="required">*</span></label>
+          <div class="input-wrapper" [class.input-error]="isInvalid(prodForm,'cantidad_pedida')">
+            <span class="material-symbols-outlined input-icon">shopping_cart</span>
+            <input type="number" formControlName="cantidad_pedida" min="0.01" step="0.01">
+          </div>
+          @if (isInvalid(prodForm,'cantidad_pedida')) {
+            <span class="field-error">Mínimo 0.01.</span>
+          }
+        </div>
+
+        <!-- Precio Referencial -->
+        <div class="field-group">
+          <label class="field-label">Precio Referencial (S/.) <span class="required">*</span></label>
+          <div class="input-wrapper" [class.input-error]="isInvalid(prodForm,'precio_referencial')">
+            <span class="material-symbols-outlined input-icon">payments</span>
+            <input type="number" formControlName="precio_referencial" min="0" step="0.01" placeholder="0.00">
+          </div>
+          @if (isInvalid(prodForm,'precio_referencial')) {
+            <span class="field-error">Requerido.</span>
+          }
+        </div>
+
+        <!-- Especificaciones (ancho completo) -->
+        <div class="field-group full-width">
+          <label class="field-label">Especificaciones Técnicas</label>
+          <div class="input-wrapper">
+            <span class="material-symbols-outlined input-icon">notes</span>
+            <input type="text" formControlName="especificaciones" placeholder="Marca, modelo, características...">
+          </div>
+        </div>
+
+      </form>
+
+      <!-- Botón Agregar -->
+      <div style="display:flex; justify-content:flex-end;">
+        <button class="btn-add" (click)="agregarItem()">
+          <span class="material-symbols-outlined">add_shopping_cart</span>
+          Agregar a la Solicitud
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ TABLA DE ÍTEMS ═══════════════════════════════════════════ -->
+  <section class="card">
+    <div class="card-header" style="border-bottom: 1px solid #e5e7eb;">
+      <div class="step-badge step-badge--amber">✓</div>
+      <div style="flex:1;">
+        <h2 class="card-title">Resumen de la Solicitud</h2>
+        <p class="card-subtitle">{{ items().length }} producto(s) agregado(s)</p>
+      </div>
+      @if (items().length > 0) {
+        <div class="total-chip">
+          Total Referencial: <strong>S/. {{ totalReferencial | number:'1.2-2' }}</strong>
+        </div>
+      }
+    </div>
+
+    @if (items().length === 0) {
+      <div class="empty-state">
+        <span class="material-symbols-outlined empty-icon">shopping_bag</span>
+        <p>Aún no hay productos en la solicitud. Agrégalos desde la sección anterior.</p>
+      </div>
+    }
+
+    @if (items().length > 0) {
+      <div class="table-responsive">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th class="col-index">#</th>
+              <th>Producto</th>
+              <th>Categoría</th>
+              <th>Unidad</th>
+              <th style="text-align:right;">Stk. Mín.</th>
+              <th style="text-align:right;">Cant.</th>
+              <th style="text-align:right;">Precio Ref.</th>
+              <th style="text-align:right;">Subtotal</th>
+              <th>Proveedor</th>
+              <th>Especific.</th>
+              <th class="col-actions"></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (it of items(); track $index; let i = $index) {
+              <tr>
+                <td class="col-index text-muted">{{ i + 1 }}</td>
+                <td>
+                  <div style="font-weight:600; color:#111827;">{{ it.nombre }}</div>
+                  @if (it.cod_materia && it.cod_materia !== '-') {
+                    <div class="code-tag">{{ it.cod_materia }}</div>
+                  }
+                  @if (it.es_nuevo_producto) {
+                    <span class="badge-nuevo">NUEVO</span>
+                  }
+                </td>
+                <td class="text-muted-sm">{{ it.nombre_categoria }}</td>
+                <td class="text-muted-sm">{{ it.nombre_unidad }}</td>
+                <td style="text-align:right;">{{ it.stock_minimo }}</td>
+                <td style="text-align:right; font-weight:600;">{{ it.cantidad_pedida }}</td>
+                <td style="text-align:right;">S/. {{ it.precio_referencial | number:'1.2-2' }}</td>
+                <td style="text-align:right; font-weight:700; color:#4f46e5;">
+                  S/. {{ (it.precio_referencial * it.cantidad_pedida) | number:'1.2-2' }}
+                </td>
+                <td>
+                  <div style="font-size:0.8rem; font-weight:600;">{{ it.razon_social_proveedor }}</div>
+                  <div style="font-size:0.72rem; color:#6b7280;">{{ it.ruc_proveedor }}</div>
+                </td>
+                <td class="text-muted-sm" style="max-width:140px; white-space:normal;">
+                  {{ it.especificaciones || '—' }}
+                </td>
+                <td class="col-actions">
+                  <button class="btn-remove" (click)="quitarItem(i)" title="Quitar">
+                    <span class="material-symbols-outlined">delete</span>
+                  </button>
+                </td>
+              </tr>
+            }
+          </tbody>
+          <tfoot>
+            <tr>
+              <td colspan="7" style="text-align:right; font-weight:700; padding:0.9rem 1rem; color:#374151;">
+                TOTAL REFERENCIAL:
+              </td>
+              <td style="text-align:right; font-weight:800; font-size:1.05rem; color:#4f46e5; padding:0.9rem 1rem;">
+                S/. {{ totalReferencial | number:'1.2-2' }}
+              </td>
+              <td colspan="3"></td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    }
+  </section>
+
+  <!-- ══ FOOTER ═══════════════════════════════════════════════════ -->
+  <div class="form-footer">
+    <button class="btn-ghost" (click)="cancelar()">Cancelar</button>
+    <button class="btn-primary" (click)="guardar()" [disabled]="submitting() || items().length === 0">
+      @if (submitting()) { <span class="spinner-sm spinner-white"></span> }
+      <span class="material-symbols-outlined">send</span>
+      Enviar Solicitud
+    </button>
+  </div>
+
+</div>
+
+<!-- ══ MODAL CATÁLOGO DE MATERIALES ════════════════════════════════ -->
+@if (mostrarModalMaterial()) {
+  <div class="modal-backdrop" (click)="mostrarModalMaterial.set(false)">
+    <div class="modal-card" style="max-width:780px; height:80vh;" (click)="$event.stopPropagation()">
+      <header class="modal-header">
+        <div class="modal-title-group">
+          <span class="material-symbols-outlined modal-icon">category</span>
+          <h2 class="modal-title">Catálogo de Materiales</h2>
+        </div>
+        <button class="modal-close" (click)="mostrarModalMaterial.set(false)">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </header>
+
+      <div class="modal-search-bar">
+        <span class="material-symbols-outlined search-icon">search</span>
+        <input type="text" class="search-input" placeholder="Buscar por código o descripción..."
+               [value]="materialBusqueda()" (input)="filtrarMateriales($event)" autofocus>
+      </div>
+
+      <div class="modal-body-scroll">
+        <table class="data-table">
+          <thead style="position:sticky;top:0;z-index:5;">
+            <tr>
+              <th>Código</th>
+              <th>Descripción</th>
+              <th>Categoría</th>
+              <th>Unidad</th>
+              <th>Stock</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (m of materialesFiltrados(); track m.id_material) {
+              <tr class="catalog-row" (click)="seleccionarDelCatalogo(m)">
+                <td><span class="code-badge">{{ m.cod_materia }}</span></td>
+                <td style="font-weight:500;">{{ m.descripcion }}</td>
+                <td class="text-muted-sm">{{ m.nombre_categoria }}</td>
+                <td class="text-muted-sm">{{ m.nombre_unidad }}</td>
+                <td>{{ m.stock }}</td>
+                <td>
+                  <button class="btn-catalog-select">Seleccionar</button>
+                </td>
+              </tr>
+            }
+            @if (materialesFiltrados().length === 0) {
+              <tr>
+                <td colspan="6" style="text-align:center;padding:2rem;color:#9ca3af;">
+                  No se encontraron materiales.
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+}

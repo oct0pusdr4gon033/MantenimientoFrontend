@@ -1,0 +1,124 @@
+<div class="page-wrapper">
+  
+  <div class="page-header">
+    <div class="page-title-group">
+      <button class="btn-back" routerLink="/GestionMantenimiento/estrategia" title="Regresar al listado">
+        <span class="material-symbols-outlined">arrow_back</span>
+      </button>
+      <span class="material-symbols-outlined page-icon">visibility</span>
+      <div>
+        <h1 class="page-title">Detalle de la Estrategia</h1>
+        <p class="page-subtitle">Información general y PMs configurados</p>
+      </div>
+    </div>
+  </div>
+
+  @if (cargando()) {
+    <div class="table-card" style="padding: 3rem; text-align: center;">
+      <span class="material-symbols-outlined" style="font-size: 3rem; color: #9ca3af; animation: spin 1s linear infinite;">sync</span>
+      <p style="margin-top: 1rem; color: #6b7280;">Cargando información de la estrategia...</p>
+    </div>
+  } @else if (error() || !estrategia()) {
+    <div class="table-card" style="padding: 3rem; text-align: center;">
+      <span class="material-symbols-outlined" style="font-size: 3rem; color: #ef4444;">error</span>
+      <p style="margin-top: 1rem; color: #ef4444;">No se pudo cargar la estrategia o no existe.</p>
+      <button class="btn-primary" style="margin-top: 1rem;" routerLink="/GestionMantenimiento/estrategia">Volver al listado</button>
+    </div>
+  } @else {
+    <!-- Panel General -->
+    <div class="table-card" style="padding: 1.5rem; margin-bottom: 1.5rem;">
+      <h3 style="margin-bottom: 1.5rem; font-weight: 600; color: #374151; font-size: 1.1rem; border-bottom: 1px solid #f3f4f6; padding-bottom: 0.5rem;">
+        Datos Generales
+      </h3>
+      
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem;">
+        <div>
+          <label style="display: block; font-size: 0.85rem; color: #6b7280; margin-bottom: 0.3rem;">Código</label>
+          <span class="code-badge" style="font-size: 1rem;">{{ estrategia()!.cod_estrategia }}</span>
+        </div>
+        <div>
+          <label style="display: block; font-size: 0.85rem; color: #6b7280; margin-bottom: 0.3rem;">Título de Estrategia</label>
+          <p style="font-weight: 500; color: #111827;">{{ estrategia()!.titulo_estrategia }}</p>
+        </div>
+        <div>
+          <label style="display: block; font-size: 0.85rem; color: #6b7280; margin-bottom: 0.3rem;">Asignación</label>
+          @if (estrategia()!.id_flota) {
+            <div class="cell-stacked">
+              <span class="code-badge-sm" style="margin-bottom: 2px; display: inline-block;">Flota</span>
+              <span class="text-muted-sm">{{ estrategia()!.cod_flota || estrategia()!.nombre_flota }}</span>
+            </div>
+          } @else if (estrategia()!.id_equipo) {
+            <div class="cell-stacked">
+              <span class="code-badge-sm" style="color: #3b82f6; background: rgba(59, 130, 246, 0.1); border-color: rgba(59, 130, 246, 0.2); margin-bottom: 2px; display: inline-block;">Equipo</span>
+              <span class="text-muted-sm">{{ estrategia()!.cod_equipo }}</span>
+            </div>
+          } @else {
+            <span class="text-muted-sm">Sin Asignar</span>
+          }
+        </div>
+        <div>
+          <label style="display: block; font-size: 0.85rem; color: #6b7280; margin-bottom: 0.3rem;">Estado</label>
+          <span class="estado-badge" [ngClass]="estrategia()!.estado === 'ACTIVO' ? 'badge-operativo' : 'badge-inactivo'">
+            {{ estrategia()!.estado }}
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Panel de Detalles -->
+    <div class="table-card">
+      <h3 style="margin: 1.5rem 1.5rem 0 1.5rem; font-weight: 600; color: #374151; font-size: 1.1rem; border-bottom: 1px solid #f3f4f6; padding-bottom: 0.5rem;">
+        Detalles / PMs Configurados
+      </h3>
+      
+      <div class="table-responsive">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th class="col-index">#</th>
+              <th>Tipo PM</th>
+              <th>Medida</th>
+              <th>Unidad</th>
+              <th>Umbral</th>
+              <th>% Tol.</th>
+              <th>Límite Inferior</th>
+              <th>Límite Superior</th>
+              <th class="col-actions">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (detalle of estrategia()!.detalles; track detalle.id_detalle_estrg; let i = $index) {
+              <tr>
+                <td class="col-index text-muted">{{ i + 1 }}</td>
+                <td><span class="code-badge-sm" style="background: #f3f4f6; color: #374151; border-color: #e5e7eb;">{{ detalle.tipo_pm }}</span></td>
+                <td>{{ detalle.nombre_medida }}</td>
+                <td>{{ detalle.uni_med }}</td>
+                <td style="font-weight: 500;">{{ detalle.umbral_mant }}</td>
+                <td>{{ detalle.porcentaje_tol }}%</td>
+                <td style="color: #ef4444;">{{ detalle.tolerancia_inf }}</td>
+                <td style="color: #10b981;">{{ detalle.tolerancia_sup }}</td>
+                <td class="col-actions">
+                  <div class="actions-group">
+                    <button class="btn-icon btn-detail" (click)="crearPlanDesdeEstrategia(detalle)" title="Crear Plan de Mantenimiento">
+                      <span class="material-symbols-outlined">add_task</span>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="9">
+                  <div class="table-empty" style="padding: 2rem;">
+                    <span class="material-symbols-outlined empty-icon">assignment</span>
+                    <p>Esta estrategia no tiene detalles de PM registrados.</p>
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  }
+
+</div>

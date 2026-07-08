@@ -1,0 +1,52 @@
+<aside class="sidebar-container">
+
+  <!-- Logo / Módulo -->
+  <div class="sidebar-header">
+    <div class="sidebar-brand">
+      <span class="brand-dot" [style.background]="moduloColor"></span>
+      <div>
+        <span class="brand-tag">EQUIP-TRACK</span>
+        <h3 class="brand-modulo">{{ moduloNombre }}</h3>
+      </div>
+    </div>
+  </div>
+
+  <!-- Usuario -->
+  <div class="sidebar-user">
+    <div class="user-avatar">
+      <span class="material-symbols-outlined">account_circle</span>
+    </div>
+    <div class="user-info">
+      <span class="user-name">{{ nombreUsuario }}</span>
+      <span class="user-role">{{ rolUsuario }}</span>
+    </div>
+  </div>
+
+  <div class="sidebar-divider"></div>
+
+  <!-- Menú de navegación -->
+  <nav class="sidebar-nav">
+    <ul>
+      @for (item of menuItems; track item.nombre) {
+        <li>
+          <a [routerLink]="item.url"
+             routerLinkActive="active-link"
+             [routerLinkActiveOptions]="{ exact: item.url.endsWith('dashboard') }"
+             class="sidebar-btn">
+            <span class="material-symbols-outlined" [ngClass]="'nav-icon'">{{ item.icono }}</span>
+            <span class="nav-label">{{ item.texto }}</span>
+          </a>
+        </li>
+      }
+    </ul>
+  </nav>
+
+  <!-- Logout -->
+  <div class="sidebar-footer">
+    <button class="btn-logout" (click)="logout()">
+      <span class="material-symbols-outlined">logout</span>
+      <span>Cerrar sesión</span>
+    </button>
+  </div>
+
+</aside>

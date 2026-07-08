@@ -1,0 +1,332 @@
+<div class="page-wrapper print-layout-adjust mantenimiento-theme">
+  
+  <!-- ── Header Superior ────────────────────────────────────────── -->
+  <div class="page-header no-print">
+    <div class="page-title-group">
+      <button class="btn-back" (click)="volver()" title="Volver al listado">
+        <span class="material-symbols-outlined">arrow_back</span>
+      </button>
+      <div>
+        @if (vale()?.estado === 'DESPACHADO') {
+          <h1 class="page-title">Nota de Salida de Almacén: {{ vale()?.cod_vale }}</h1>
+          <p class="page-subtitle">Historial y comprobante de entrega física de repuestos</p>
+        } @else {
+          <h1 class="page-title">Vale de Pedido de Materiales: {{ vale()?.cod_vale }}</h1>
+          <p class="page-subtitle">Solicitud de materiales en estado Pendiente de entrega</p>
+        }
+      </div>
+    </div>
+    <div class="header-actions">
+      <button class="btn-secondary" (click)="volver()">Volver</button>
+      
+      @if (vale()?.estado === 'DESPACHADO') {
+        <button class="btn-primary" (click)="imprimir()">
+          <span class="material-symbols-outlined">print</span> Imprimir Nota
+        </button>
+      }
+
+      @if (isAlmacen() && vale()?.estado === 'PENDIENTE') {
+        <button class="btn-primary btn-dispatch-theme" (click)="despachar()" [disabled]="despachando() || cargando()">
+          @if (despachando()) {
+            <span class="spinner"></span> Procesando...
+          } @else {
+            <span class="material-symbols-outlined">local_shipping</span> Confirmar Despacho
+          }
+        </button>
+      }
+
+      @if (!isAlmacen() && vale()?.estado === 'PENDIENTE') {
+        @if (!editando()) {
+          <button class="btn-primary" (click)="iniciarEdicion()" [disabled]="cargando()">
+            <span class="material-symbols-outlined">edit</span> Editar Vale
+          </button>
+        } @else {
+          <button class="btn-secondary" (click)="cancelarEdicion()" [disabled]="guardandoCambios()">Cancelar</button>
+          <button class="btn-primary" (click)="guardarEdicion()" [disabled]="guardandoCambios()">
+            @if (guardandoCambios()) {
+              <span class="spinner"></span> Guardando...
+            } @else {
+              <span class="material-symbols-outlined">save</span> Guardar Cambios
+            }
+          </button>
+        }
+      }
+    </div>
+  </div>
+
+  <!-- ── Notificaciones flotantes ────────────────────────────── -->
+  @if (mensajeError() && !cargando()) {
+    <div class="alert alert-danger no-print">
+      <span class="material-symbols-outlined">error</span>
+      <span>{{ mensajeError() }}</span>
+    </div>
+  }
+  @if (mensajeExito() && !cargando()) {
+    <div class="alert alert-success no-print">
+      <span class="material-symbols-outlined">check_circle</span>
+      <span>{{ mensajeExito() }}</span>
+    </div>
+  }
+
+  <!-- ── Contenedor Principal (2 Columnas) ───────────────────────── -->
+  @if (cargando()) {
+    <div class="loading-state no-print">
+      <span class="spinner-large"></span>
+      <p>Cargando información del vale...</p>
+    </div>
+  } @else if (vale()) {
+    
+    <!-- ── BLOQUE DE IMPRESIÓN EXCLUSIVO (Oculto en pantalla, visible al imprimir) ── -->
+    <div class="print-only-receipt">
+      <div class="receipt-header">
+        <div class="receipt-company">
+          <h2>MULTICOSAILOR SAC</h2>
+          <p>Área de Operaciones de Almacén</p>
+        </div>
+        <div class="receipt-doc-details">
+          <h3>NOTA DE SALIDA DE ALMACÉN</h3>
+          <h2 class="receipt-code">{{ vale()?.cod_vale }}</h2>
+        </div>
+      </div>
+      <hr />
+      <div class="receipt-metadata-grid">
+        <div><strong>Fecha Emisión:</strong> {{ formatearFecha(vale()?.fecha_creacion) }}</div>
+        <div><strong>Fecha Despacho:</strong> {{ formatearFecha(vale()?.fecha_despacho) }}</div>
+        <div><strong>Solicitado Por:</strong> {{ vale()?.solicitado_por }}</div>
+        <div><strong>Despachado Por:</strong> {{ vale()?.despachado_por }}</div>
+        <div><strong>OT Relacionada:</strong> {{ vale()?.cod_ot || 'Sin OT (Consumo Libre)' }}</div>
+
+      </div>
+      <hr />
+      <h4>MATERIALES ENTREGADOS</h4>
+      <table class="receipt-table">
+        <thead>
+          <tr>
+            <th>Código</th>
+            <th>Descripción</th>
+            <th class="text-right">Cant. Solicitada</th>
+            <th class="text-right">Cant. Entregada</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (m of vale()?.materiales; track m.id_vale_material) {
+            <tr>
+              <td>{{ m.cod_materia }}</td>
+              <td>{{ m.descripcion }}</td>
+              <td class="text-right">{{ m.cantidad_solicitada }}</td>
+              <td class="text-right">{{ m.cantidad_despachada || '0' }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+      @if (vale()?.observaciones) {
+        <div class="receipt-notes">
+          <strong>Observaciones:</strong> {{ vale()?.observaciones }}
+        </div>
+      }
+      <div class="receipt-signatures">
+        <div class="signature-line">
+          <div class="line"></div>
+          <span>Firma de Almacén</span>
+          <strong>{{ vale()?.despachado_por }}</strong>
+        </div>
+        <div class="signature-line">
+          <div class="line"></div>
+          <span>Firma de Solicitante</span>
+          <strong>{{ vale()?.solicitado_por }}</strong>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── VISTA PANTALLA PRINCIPAL ── -->
+    <div class="form-container screen-content">
+
+      <!-- COLUMNA IZQUIERDA: Tarjeta de Detalles del Documento -->
+      <div class="form-column">
+        
+        <div class="form-card">
+          <div class="card-header">
+            <span class="material-symbols-outlined card-icon">receipt</span>
+            <h2>Detalles del Vale</h2>
+          </div>
+
+          <div class="card-body">
+            
+            <div class="metadata-detail-list">
+              
+              <div class="detail-item">
+                <span class="detail-label">Estado</span>
+                <span class="estado-pill" [class.estado-pendiente]="vale()?.estado === 'PENDIENTE'" [class.estado-activa]="vale()?.estado === 'DESPACHADO'">
+                  {{ vale()?.estado }}
+                </span>
+              </div>
+
+              <div class="detail-item">
+                <span class="detail-label">Código Vale / Nota</span>
+                <span class="font-bold font-mono text-large">{{ vale()?.cod_vale }}</span>
+              </div>
+
+              <div class="detail-item">
+                <span class="detail-label">Orden de Trabajo</span>
+                @if (vale()?.id_ot) {
+                  <button type="button" class="ot-detail-link-btn" (click)="verOt()">
+                    <span class="material-symbols-outlined">link</span>
+                    {{ vale()?.cod_ot }}
+                  </button>
+                } @else {
+                  <span class="text-muted italic">Vale Libre / Sin OT</span>
+                }
+              </div>
+
+
+
+              <hr class="separator-light" />
+
+              <div class="detail-item">
+                <span class="detail-label">Fecha Creación</span>
+                <span class="text-dark">{{ formatearFecha(vale()?.fecha_creacion) }}</span>
+              </div>
+
+              <div class="detail-item">
+                <span class="detail-label">Solicitado Por</span>
+                <span class="text-dark font-semibold">{{ vale()?.solicitado_por }}</span>
+              </div>
+
+              @if (vale()?.estado === 'DESPACHADO') {
+                <hr class="separator-light" />
+                
+                <div class="detail-item">
+                  <span class="detail-label">Fecha Despacho</span>
+                  <span class="text-dark">{{ formatearFecha(vale()?.fecha_despacho) }}</span>
+                </div>
+
+                <div class="detail-item">
+                  <span class="detail-label">Despachado Por</span>
+                  <span class="text-dark font-semibold">{{ vale()?.despachado_por }}</span>
+                </div>
+              }
+
+            </div>
+
+            @if (vale()?.observaciones) {
+              <div class="observations-block">
+                <h3>Observaciones de Solicitud</h3>
+                <p>{{ vale()?.observaciones }}</p>
+              </div>
+            }
+
+          </div>
+        </div>
+
+      </div>
+
+      <!-- COLUMNA DERECHA: Lista de Repuestos y Cantidades a Despachar -->
+      <div class="form-column">
+        
+        <div class="form-card">
+          <div class="card-header">
+            <span class="material-symbols-outlined card-icon">build</span>
+            <h2>
+              {{ vale()?.estado === 'PENDIENTE' ? 'Repuestos Solicitados' : 'Repuestos Despachados' }}
+            </h2>
+          </div>
+
+          <div class="card-body">
+            
+            <div class="table-responsive">
+              <table class="details-materials-table">
+                <thead>
+                  <tr>
+                    <th>Código</th>
+                    <th>Descripción</th>
+                    <th class="col-center">Cant. Solicitada</th>
+                    @if (editando()) {
+                      <th class="col-center">Acción</th>
+                    } @else if (isAlmacen() && vale()?.estado === 'PENDIENTE') {
+                      <th class="col-center">Cant. Despachar *</th>
+                    } @else {
+                      <th class="col-center">Cant. Despachada</th>
+                    }
+                  </tr>
+                </thead>
+                <tbody>
+                  @if (editando()) {
+                    @for (m of materialesEdit(); track m.id_material) {
+                      <tr>
+                        <td>
+                          <span class="font-mono font-bold">{{ m.cod_materia }}</span>
+                        </td>
+                        <td>{{ m.descripcion }}</td>
+                        <td class="col-center">
+                          <div class="edit-qty-wrapper" style="display:flex; flex-direction:column; align-items:center;">
+                            <input 
+                              type="number" 
+                              [ngModel]="m.cantidad_solicitada" 
+                              (ngModelChange)="actualizarCantidadEdit(m.id_material, $event)"
+                              min="0.01"
+                              [max]="m.original_cantidad"
+                              step="any"
+                              class="dispatch-qty-input"
+                              style="width: 80px; text-align: center;"
+                            />
+                            <span class="qty-info-label" style="font-size:11px; color:var(--text-muted); margin-top:2px;">
+                              Máx: {{ m.original_cantidad }}
+                            </span>
+                          </div>
+                        </td>
+                        <td class="col-center">
+                          <button type="button" class="btn-icon" title="Quitar Material" (click)="quitarMaterial(m.id_material)" style="color:#dc3545; border:none; background:transparent; cursor:pointer;">
+                            <span class="material-symbols-outlined">delete</span>
+                          </button>
+                        </td>
+                      </tr>
+                    }
+                  } @else {
+                    @for (m of vale()?.materiales; track m.id_vale_material) {
+                      <tr>
+                        <td>
+                          <span class="font-mono font-bold">{{ m.cod_materia }}</span>
+                        </td>
+                        <td>{{ m.descripcion }}</td>
+                        <td class="col-center font-bold text-dark">{{ m.cantidad_solicitada }}</td>
+                        
+                        @if (isAlmacen() && vale()?.estado === 'PENDIENTE') {
+                          <td class="col-center">
+                            <input 
+                              type="number" 
+                              [ngModel]="cantidadesDespacho()[m.id_vale_material]" 
+                              (ngModelChange)="actualizarCantidadDespacho(m.id_vale_material, $event)"
+                              min="0"
+                              [max]="m.cantidad_solicitada"
+                              class="dispatch-qty-input"
+                            />
+                          </td>
+                        } @else {
+                          <td class="col-center font-bold text-success">{{ m.cantidad_despachada || '0' }}</td>
+                        }
+                      </tr>
+                    }
+                  }
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Panel informativo de Almacén para el Despacho -->
+            @if (isAlmacen() && vale()?.estado === 'PENDIENTE') {
+              <div class="dispatch-warning-info-card">
+                <span class="material-symbols-outlined info-icon">info</span>
+                <div>
+                  <h4>Confirmación de Entrega Física</h4>
+                  <p>Al confirmar el despacho, se descontarán automáticamente las cantidades de stock del inventario. Si no cuenta con stock suficiente, el sistema no permitirá despachar el material en falta.</p>
+                </div>
+              </div>
+            }
+
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  }
+</div>

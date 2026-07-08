@@ -1,0 +1,191 @@
+<div class="page-wrapper">
+
+  <!-- ── Header de página ──────────────────────────────────── -->
+  <div class="page-header">
+    <div class="page-title-group">
+      <span class="material-symbols-outlined page-icon">precision_manufacturing</span>
+      <div>
+        <h1 class="page-title">Modelos de Equipo</h1>
+        <p class="page-subtitle">Gestión y administración de modelos de equipo</p>
+      </div>
+    </div>
+    <button class="btn-primary" (click)="abrirCrear()">
+      <span class="material-symbols-outlined">add</span>
+      Nuevo Modelo
+    </button>
+  </div>
+
+  <!-- ── Toast notificaciones ──────────────────────────────── -->
+  @if (mensajeExito) {
+  <div class="toast toast-success">
+    <span class="material-symbols-outlined">check_circle</span>
+    {{ mensajeExito }}
+  </div>
+  }
+  @if (mensajeError && !modalMode()) {
+  <div class="toast toast-error">
+    <span class="material-symbols-outlined">error</span>
+    {{ mensajeError }}
+  </div>
+  }
+
+  <!-- ── Barra de filtros ───────────────────────────────────── -->
+  <div class="filter-bar">
+    <div class="search-wrapper">
+      <span class="material-symbols-outlined search-icon">search</span>
+      <input id="filtro-busqueda" type="text" class="search-input"
+        placeholder="Buscar por modelo, marca o tipo..."
+        [value]="filtroBusqueda()" (input)="onFiltroChange($any($event.target).value)" />
+      @if (filtroBusqueda()) {
+      <button class="clear-btn" (click)="limpiarFiltro()" title="Limpiar búsqueda">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+      }
+    </div>
+    <div class="filter-stats">
+      <span class="badge-count">{{ modelosFiltrados().length }} resultado(s)</span>
+    </div>
+  </div>
+
+  <!-- ── Tabla ─────────────────────────────────────────────── -->
+  <div class="table-card">
+
+    @if (cargando()) {
+    <div class="table-loader">
+      <span class="spinner-lg"></span>
+      <p>Cargando modelos...</p>
+    </div>
+    } @else if (modelosFiltrados().length === 0) {
+    <div class="table-empty">
+      <span class="material-symbols-outlined empty-icon">search_off</span>
+      <p>No se encontraron modelos de equipo.</p>
+      @if (filtroBusqueda()) {
+      <button class="btn-ghost" (click)="limpiarFiltro()">Limpiar filtro</button>
+      } @else {
+      <button class="btn-primary" (click)="abrirCrear()">Crear primer modelo</button>
+      }
+    </div>
+    } @else {
+    <div class="table-responsive">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th class="col-index">#</th>
+            <th>Nombre del Modelo</th>
+            <th>Marca</th>
+            <th>Tipo de Equipo</th>
+            <th class="col-actions">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (modelo of modelosFiltrados(); track modelo.idModelo; let i = $index) {
+          <tr>
+            <td class="col-index text-muted">{{ i + 1 }}</td>
+            <td class="area-nombre">{{ modelo.nombreModelo }}</td>
+            <td>
+              <span class="code-badge">{{ modelo.nombreMarca }}</span>
+            </td>
+            <td class="text-muted-sm">{{ modelo.nombreTipo }}</td>
+            <td class="col-actions">
+              <div class="actions-group">
+                <button class="btn-icon btn-edit" (click)="abrirEditar(modelo)" title="Editar">
+                  <span class="material-symbols-outlined">edit</span>
+                </button>
+              </div>
+            </td>
+          </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    }
+
+  </div>
+
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- Modal Crear / Editar                                    -->
+<!-- ═══════════════════════════════════════════════════════ -->
+@if (modalMode()) {
+<div class="modal-backdrop" (click)="cerrarModal()">
+  <div class="modal-card" (click)="$event.stopPropagation()">
+
+    <div class="modal-header">
+      <div class="modal-title-group">
+        <span class="material-symbols-outlined modal-icon">
+          {{ modalMode() === 'crear' ? 'add_circle' : 'edit' }}
+        </span>
+        <h2 class="modal-title">
+          {{ modalMode() === 'crear' ? 'Nuevo Modelo de Equipo' : 'Editar Modelo de Equipo' }}
+        </h2>
+      </div>
+      <button class="modal-close" (click)="cerrarModal()">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+
+    <div class="modal-body">
+
+      @if (mensajeError) {
+      <div class="form-error-alert">
+        <span class="material-symbols-outlined">error</span>
+        {{ mensajeError }}
+      </div>
+      }
+
+      <div class="form-group">
+        <label for="form-nombre">Nombre del Modelo</label>
+        <div class="input-wrapper">
+          <span class="input-icon material-symbols-outlined">precision_manufacturing</span>
+          <input id="form-nombre" type="text" [(ngModel)]="form.nombreModelo" name="nombreModelo"
+            placeholder="Ej: FH 460, 992K, PC200" />
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="form-marca">Marca</label>
+        <div class="input-wrapper select-wrapper">
+          <span class="input-icon material-symbols-outlined">verified</span>
+          <select id="form-marca" [(ngModel)]="form.idMarca" name="idMarca">
+            <option [ngValue]="0" disabled>-- Seleccione una marca --</option>
+            @for (marca of marcas(); track marca.idMarca) {
+            <option [ngValue]="marca.idMarca">{{ marca.nombreMarca }}</option>
+            }
+          </select>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="form-tipo">Tipo de Equipo</label>
+        <div class="input-wrapper select-wrapper">
+          <span class="input-icon material-symbols-outlined">category</span>
+          <select id="form-tipo" [(ngModel)]="form.idTipoEqp" name="idTipoEqp">
+            <option [ngValue]="0" disabled>-- Seleccione un tipo --</option>
+            @for (tipo of tipos(); track tipo.idTipoEqp) {
+            <option [ngValue]="tipo.idTipoEqp">{{ tipo.nombreTipo }}</option>
+            }
+          </select>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn-ghost" (click)="cerrarModal()" [disabled]="guardando()">
+        Cancelar
+      </button>
+      <button class="btn-primary" (click)="guardar()" [disabled]="guardando()">
+        @if (guardando()) {
+        <span class="spinner-sm spinner-white"></span>
+        Guardando...
+        } @else {
+        <span class="material-symbols-outlined">save</span>
+        {{ modalMode() === 'crear' ? 'Crear Modelo' : 'Guardar Cambios' }}
+        }
+      </button>
+    </div>
+
+  </div>
+</div>
+}

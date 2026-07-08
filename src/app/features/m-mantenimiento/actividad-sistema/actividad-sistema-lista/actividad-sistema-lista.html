@@ -1,0 +1,229 @@
+<div class="page-wrapper">
+
+  <!-- ── Header de página ──────────────────────────────────── -->
+  <div class="page-header">
+    <div class="page-title-group">
+      <span class="material-symbols-outlined page-icon">build</span>
+      <div>
+        <h1 class="page-title">Actividades de Sistema</h1>
+        <p class="page-subtitle">Gestión y administración de actividades por sistema</p>
+      </div>
+    </div>
+    <button class="btn-primary" (click)="abrirCrear()">
+      <span class="material-symbols-outlined">add</span>
+      Nueva Actividad
+    </button>
+  </div>
+
+  <!-- ── Toast notificaciones ──────────────────────────────── -->
+  @if (mensajeExito) {
+  <div class="toast toast-success">
+    <span class="material-symbols-outlined">check_circle</span>
+    {{ mensajeExito }}
+  </div>
+  }
+  @if (mensajeError && !modalMode()) {
+  <div class="toast toast-error">
+    <span class="material-symbols-outlined">error</span>
+    {{ mensajeError }}
+  </div>
+  }
+
+  <!-- ── Barra de filtros ───────────────────────────────────── -->
+  <div class="filter-bar">
+    <div class="search-wrapper">
+      <span class="material-symbols-outlined search-icon">search</span>
+      <input id="filtro-busqueda" type="text" class="search-input" placeholder="Buscar por código o nombre..."
+        [value]="filtroBusqueda()" (input)="onFiltroChange($any($event.target).value)" 
+        (keyup.enter)="buscarConApi()" />
+      @if (filtroBusqueda()) {
+      <button class="clear-btn" (click)="limpiarFiltro()" title="Limpiar búsqueda">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+      }
+    </div>
+    <div class="filter-stats">
+      <span class="badge-count">{{ actividadesFiltradas().length }} resultado(s)</span>
+    </div>
+  </div>
+
+  <!-- ── Tabla ─────────────────────────────────────────────── -->
+  <div class="table-card">
+
+    @if (cargando()) {
+    <div class="table-loader">
+      <span class="spinner-lg"></span>
+      <p>Cargando actividades de sistema...</p>
+    </div>
+    } @else if (actividadesFiltradas().length === 0) {
+    <div class="table-empty">
+      <span class="material-symbols-outlined empty-icon">search_off</span>
+      <p>No se encontraron actividades.</p>
+      @if (filtroBusqueda()) {
+      <button class="btn-ghost" (click)="limpiarFiltro()">Limpiar filtro</button>
+      } @else {
+      <button class="btn-primary" (click)="abrirCrear()">Crear primera actividad</button>
+      }
+    </div>
+    } @else {
+    <div class="table-responsive">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th class="col-index">#</th>
+            <th>Código</th>
+            <th>Sistema</th>
+            <th>Nombre Actividad</th>
+            <th>Duración</th>
+            <th>Estado</th>
+            <th class="col-actions">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (actividad of actividadesFiltradas(); track actividad.id_actividad; let i = $index) {
+          <tr>
+            <td class="col-index text-muted">{{ i + 1 }}</td>
+            <td>
+              <span class="code-badge">{{ actividad.cod_act }}</span>
+            </td>
+            <td>
+              <span class="area-nombre">{{ getNombreSistema(actividad.id_sistema) }}</span>
+            </td>
+            <td>{{ actividad.nombre_actividad }}</td>
+            <td>
+              {{ actividad.duracion }} 
+              <span class="text-muted" style="font-size:0.75rem;">{{ actividad.medida_duracion === 'H' ? 'Horas' : 'Minutos' }}</span>
+            </td>
+            <td>
+              @if (actividad.estado) {
+                <span class="badge-count" style="background:#dcfce7;color:#166534;">Activo</span>
+              } @else {
+                <span class="badge-count" style="background:#fee2e2;color:#991b1b;">Inactivo</span>
+              }
+            </td>
+            <td class="col-actions">
+              <div class="actions-group">
+                <button class="btn-icon btn-edit" (click)="abrirEditar(actividad)" title="Editar">
+                  <span class="material-symbols-outlined">edit</span>
+                </button>
+              </div>
+            </td>
+          </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    }
+
+  </div>
+
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- Modal Crear / Editar                                    -->
+<!-- ═══════════════════════════════════════════════════════ -->
+@if (modalMode()) {
+<div class="modal-backdrop" (click)="cerrarModal()">
+  <div class="modal-card" (click)="$event.stopPropagation()">
+
+    <div class="modal-header">
+      <div class="modal-title-group">
+        <span class="material-symbols-outlined modal-icon">
+          {{ modalMode() === 'crear' ? 'add_circle' : 'edit' }}
+        </span>
+        <h2 class="modal-title">
+          {{ modalMode() === 'crear' ? 'Nueva Actividad' : 'Editar Actividad' }}
+        </h2>
+      </div>
+      <button class="modal-close" (click)="cerrarModal()">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+
+    <div class="modal-body" style="max-height: 65vh; overflow-y: auto;">
+
+      @if (mensajeError) {
+      <div class="form-error-alert">
+        <span class="material-symbols-outlined">error</span>
+        {{ mensajeError }}
+      </div>
+      }
+
+      <div class="form-group">
+        <label for="form-sistema">Sistema de Equipo</label>
+        <div class="input-wrapper">
+          <span class="input-icon material-symbols-outlined">settings_applications</span>
+          <select id="form-sistema" [(ngModel)]="form.id_sistema" name="id_sistema" class="search-input" style="border:none;background:transparent;padding-left:0;box-shadow:none;outline:none;">
+            <option [ngValue]="0" disabled>Seleccione un sistema...</option>
+            @for (sist of sistemas(); track sist.id_sistema) {
+              <option [ngValue]="sist.id_sistema">{{ sist.cod_sist }} - {{ sist.nombre_sist }}</option>
+            }
+          </select>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="form-nombre">Nombre de Actividad</label>
+        <div class="input-wrapper">
+          <span class="input-icon material-symbols-outlined">build</span>
+          <input id="form-nombre" type="text" [(ngModel)]="form.nombre_actividad" name="nombre_actividad"
+            placeholder="Ej: Cambio de aceite" />
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="form-descripcion">Descripción</label>
+        <div class="input-wrapper" style="align-items: flex-start; padding-top:0.4rem;">
+          <span class="input-icon material-symbols-outlined" style="margin-top:0.2rem;">description</span>
+          <textarea id="form-descripcion" [(ngModel)]="form.descripcion" name="descripcion"
+            placeholder="Detalles de la actividad..." rows="2" style="flex:1; border:none; background:transparent; font-family:inherit; font-size:0.875rem; color:#1f2937; outline:none; resize:vertical; padding-top:0.4rem; padding-bottom:0.4rem;"></textarea>
+        </div>
+      </div>
+
+      <div style="display:flex; gap:1rem;">
+        <div class="form-group" style="flex:1;">
+          <label for="form-duracion">Duración</label>
+          <div class="input-wrapper">
+            <span class="input-icon material-symbols-outlined">schedule</span>
+            <input id="form-duracion" type="number" [(ngModel)]="form.duracion" name="duracion" min="1"
+              placeholder="Ej: 30" />
+          </div>
+        </div>
+
+        <div class="form-group" style="flex:1;">
+          <label for="form-medida">Medida</label>
+          <div class="input-wrapper">
+            <span class="input-icon material-symbols-outlined">straighten</span>
+            <select id="form-medida" [(ngModel)]="form.medida_duracion" name="medida_duracion" class="search-input" style="border:none;background:transparent;padding-left:0;box-shadow:none;outline:none;">
+              <option value="MIN">Minutos</option>
+              <option value="H">Horas</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-group" style="flex-direction:row; align-items:center; gap:0.5rem; margin-top:0.5rem;">
+        <input type="checkbox" id="form-estado" [(ngModel)]="form.estado" name="estado" style="width:1.2rem;height:1.2rem;accent-color:#e86b1a;cursor:pointer;">
+        <label for="form-estado" style="cursor:pointer;margin:0;">Actividad Activa</label>
+      </div>
+
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn-ghost" (click)="cerrarModal()" [disabled]="guardando()">
+        Cancelar
+      </button>
+      <button class="btn-primary" (click)="guardar()" [disabled]="guardando()">
+        @if (guardando()) {
+        <span class="spinner-sm spinner-white"></span>
+        Guardando...
+        } @else {
+        <span class="material-symbols-outlined">save</span>
+        {{ modalMode() === 'crear' ? 'Crear Actividad' : 'Guardar Cambios' }}
+        }
+      </button>
+    </div>
+
+  </div>
+</div>
+}

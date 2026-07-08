@@ -1,0 +1,264 @@
+<div class="page-wrapper">
+  <header class="page-header">
+    <div class="page-title-group">
+      <button class="btn-ghost" (click)="volver()" style="padding: 0.4rem; border: none;">
+        <span class="material-symbols-outlined">arrow_back</span>
+      </button>
+      <span class="material-symbols-outlined page-icon" style="color: #e86b1a;">assignment</span>
+      <div>
+        <h1 class="page-title">Detalle de Solicitud de Pedido</h1>
+        <p class="page-subtitle">Revisa la información y aprueba la solicitud.</p>
+      </div>
+    </div>
+    <div style="display: flex; gap: 0.75rem; align-items: center;">
+      <button class="btn-ghost no-print" (click)="imprimirSolped()">
+        <span class="material-symbols-outlined">print</span> Imprimir
+      </button>
+
+      @if (solicitud()?.estado === 'PENDIENTE') {
+      <button class="btn-primary no-print" (click)="aprobarSolicitud()" [disabled]="procesando()">
+        @if (procesando()) { <span class="spinner-sm spinner-white"></span> }
+        <span class="material-symbols-outlined" *ngIf="!procesando()">check_circle</span>
+        Aprobar Solicitud
+      </button>
+      }
+    </div>
+  </header>
+
+  @if (successMessage()) {
+  <div class="toast toast-success">
+    <span class="material-symbols-outlined">check_circle</span>
+    <span>{{ successMessage() }}</span>
+  </div>
+  }
+  @if (errorMessage()) {
+  <div class="toast toast-error">
+    <span class="material-symbols-outlined">error</span>
+    <span>{{ errorMessage() }}</span>
+  </div>
+  }
+
+  @if (loading()) {
+  <div class="table-card table-loader">
+    <div class="spinner-lg" style="border-top-color: #e86b1a;"></div>
+    <p>Cargando detalles de solicitud...</p>
+  </div>
+  }
+
+  @if (!loading() && solicitud()) {
+
+  <!-- ── BLOQUE DE IMPRESIÓN EXCLUSIVO (Oculto en pantalla, visible al imprimir) ── -->
+  <div class="print-only-receipt">
+    <div class="receipt-header">
+      <div class="receipt-company">
+        <h2>MULTICOSAILOR SAC</h2>
+        <p>Área de Operaciones de Compras y Logística</p>
+      </div>
+      <div class="receipt-doc-details">
+        <h3>SOLICITUD DE PEDIDO (SOLPED)</h3>
+        <h2 class="receipt-code">{{ solicitud()!.cod_solicitud }}</h2>
+        <span class="receipt-status">ESTADO: {{ solicitud()!.estado }}</span>
+      </div>
+    </div>
+
+    <h4>SECCIÓN SOLICITANTE</h4>
+    <hr />
+    <div class="receipt-metadata-grid-ot">
+      <div><strong>Fecha Emisión:</strong> {{ solicitud()!.fecha_creacion | date:'dd/MM/yyyy HH:mm' }}</div>
+      <div><strong>Solicitante:</strong> {{ solicitud()!.nombre_empleado }}</div>
+      <div><strong>DNI:</strong> {{ solicitud()!.dni_empleado }}</div>
+    </div>
+
+    <hr />
+    <h4>SECCIÓN PROVEEDOR</h4>
+    <hr style="margin-bottom: 1.5rem;">
+    <div class="receipt-metadata-grid-ot" style="grid-template-columns: repeat(2, 1fr);">
+      <div><strong>Razón Social:</strong> {{ proveedorCompleto()?.razon_social ||
+        solicitud()!.detalles[0]?.razon_social_proveedor || '-' }}</div>
+      <div><strong>RUC:</strong> {{ proveedorCompleto()?.ruc || solicitud()!.detalles[0]?.ruc_proveedor || '-' }}
+      </div>
+      <div><strong>Nombre Comercial:</strong> {{ proveedorCompleto()?.nombre_comercial || '-' }}</div>
+      <div><strong>Teléfono:</strong> {{ proveedorCompleto()?.telefono || '-' }}</div>
+      <div><strong>Correo:</strong> {{ proveedorCompleto()?.correo || '-' }}</div>
+      <div style="grid-column: span 2;"><strong>Dirección:</strong> {{ proveedorCompleto()?.direccion || '-' }}</div>
+    </div>
+
+    <hr />
+
+    <h4>MATERIALES SOLICITADOS</h4>
+    <table class="receipt-table">
+      <thead>
+        <tr>
+          <th>Cód.</th>
+          <th>Nombre del Material</th>
+          <th>Unidad</th>
+          <th>Estado</th>
+          <th class="text-right">Cant. Pedida</th>
+          <th>Proveedor Ref.</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (d of solicitud()!.detalles; track d.id_detalle) {
+        <tr>
+          <td>{{ d.cod_materia || '-' }}</td>
+          <td>
+            {{ d.nombre }}
+            @if(d.especificaciones) { <br><small>Esp: {{ d.especificaciones }}</small> }
+          </td>
+          <td>{{ d.nombre_unidad || '-' }}</td>
+          <td>{{ d.es_nuevo_producto ? 'NUEVO' : 'CATÁLOGO' }}</td>
+          <td class="text-right"><strong>{{ d.cantidad_pedida }}</strong></td>
+          <td>{{ d.razon_social_proveedor || '-' }}</td>
+        </tr>
+        } @empty {
+        <tr>
+          <td colspan="6">No hay detalles.</td>
+        </tr>
+        }
+      </tbody>
+    </table>
+
+    <div class="receipt-signatures">
+      <div class="signature-line">
+        <div class="line"></div>
+        <span>Firma del Solicitante</span>
+      </div>
+      <div class="signature-line">
+        <div class="line"></div>
+        <span>Firma de Jefatura de Compras</span>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 1.5rem;" class="screen-content">
+    <!-- Cabecera de Documento -->
+    <section class="table-card" style="padding: 1.5rem;">
+      <div
+        style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.5rem; border-bottom: 1px solid #e5e7eb; padding-bottom: 1rem;">
+        <div>
+          <h2 style="font-size: 1.25rem; font-weight: 800; color: #1f2937; margin: 0 0 0.25rem 0;">Solicitud de Pedido
+            Nro. {{ solicitud()!.cod_solicitud }}</h2>
+          <p style="color: #6b7280; font-size: 0.85rem; margin: 0;">Emitida el {{ solicitud()!.fecha_creacion |
+            date:'dd/MM/yyyy HH:mm' }}</p>
+        </div>
+        <span class="category-name-badge" [ngClass]="{
+            'text-warning-badge': solicitud()!.estado === 'PENDIENTE',
+            'text-success-badge': solicitud()!.estado === 'APROBADO',
+            'text-danger-badge': solicitud()!.estado === 'RECHAZADO'
+          }" style="font-size: 0.9rem; padding: 0.3rem 0.8rem;">
+          {{ solicitud()!.estado }}
+        </span>
+      </div>
+
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem;">
+        <div>
+          <p
+            style="font-size: 0.75rem; color: #6b7280; font-weight: 600; text-transform: uppercase; margin: 0 0 0.25rem 0;">
+            Empleado Solicitante</p>
+          <p style="font-size: 0.95rem; font-weight: 600; color: #111827; margin: 0;">{{ solicitud()!.nombre_empleado }}
+          </p>
+          <p style="font-size: 0.85rem; color: #4b5563; margin: 0;">DNI: {{ solicitud()!.dni_empleado }}</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Sección Proveedor (Web) -->
+    <section class="table-card" style="padding: 1.5rem;">
+      <h3
+        style="font-size: 1.05rem; font-weight: 600; color: #1f2937; margin: 0 0 1rem 0; padding-bottom: 0.75rem; border-bottom: 1px solid #e5e7eb;">
+        <span class="material-symbols-outlined"
+          style="vertical-align: bottom; font-size: 1.2rem; color: #e86b1a; margin-right: 0.3rem;">store</span>
+        Datos del Proveedor
+      </h3>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.25rem;">
+        <div>
+          <p style="font-size: 0.75rem; color: #6b7280; font-weight: 600; text-transform: uppercase; margin: 0;">Razón
+            Social</p>
+          <p style="font-size: 0.9rem; font-weight: 600; color: #111827; margin: 0.2rem 0 0 0;">{{
+            proveedorCompleto()?.razon_social || solicitud()!.detalles[0]?.razon_social_proveedor || '-' }}</p>
+        </div>
+        <div>
+          <p style="font-size: 0.75rem; color: #6b7280; font-weight: 600; text-transform: uppercase; margin: 0;">RUC</p>
+          <p style="font-size: 0.9rem; font-weight: 600; color: #111827; margin: 0.2rem 0 0 0;">{{
+            proveedorCompleto()?.ruc || solicitud()!.detalles[0]?.ruc_proveedor || '-' }}</p>
+        </div>
+        <div>
+          <p style="font-size: 0.75rem; color: #6b7280; font-weight: 600; text-transform: uppercase; margin: 0;">
+            Teléfono de Contacto</p>
+          <p style="font-size: 0.9rem; font-weight: 500; color: #374151; margin: 0.2rem 0 0 0;">{{
+            proveedorCompleto()?.telefono || '-' }}</p>
+        </div>
+        <div>
+          <p style="font-size: 0.75rem; color: #6b7280; font-weight: 600; text-transform: uppercase; margin: 0;">Correo
+            Electrónico</p>
+          <p style="font-size: 0.9rem; font-weight: 500; color: #374151; margin: 0.2rem 0 0 0;">{{
+            proveedorCompleto()?.correo || '-' }}</p>
+        </div>
+        <div style="grid-column: 1 / -1;">
+          <p style="font-size: 0.75rem; color: #6b7280; font-weight: 600; text-transform: uppercase; margin: 0;">
+            Dirección Legal</p>
+          <p style="font-size: 0.9rem; font-weight: 500; color: #374151; margin: 0.2rem 0 0 0;">{{
+            proveedorCompleto()?.direccion || '-' }}</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Detalles -->
+    <section class="table-card">
+      <h3
+        style="font-size: 1.05rem; font-weight: 600; color: #1f2937; margin: 0; padding: 1.25rem 1.5rem; border-bottom: 1px solid #e5e7eb;">
+        Materiales Solicitados
+      </h3>
+
+      <div class="table-responsive">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th class="col-index">#</th>
+              <th>Cód. Material</th>
+              <th>Nombre</th>
+              <th>Categoría</th>
+              <th>Unidad</th>
+              <th>Nuevo</th>
+              <th style="text-align: right;">Cant. Pedida</th>
+              <th>Proveedor Referencia</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (d of solicitud()!.detalles; track d.id_detalle; let i = $index) {
+            <tr>
+              <td class="col-index text-muted">{{ i + 1 }}</td>
+              <td><span class="code-badge"
+                  style="color: #e86b1a; background: rgba(232, 107, 26, 0.08); border-color: rgba(232, 107, 26, 0.2);">{{
+                  d.cod_materia || '-' }}</span></td>
+              <td style="font-weight: 500;">
+                {{ d.nombre }}
+                @if(d.especificaciones) {
+                <br><small style="color: #6b7280;">Esp: {{ d.especificaciones }}</small>
+                }
+              </td>
+              <td>{{ d.nombre_categoria || '-' }}</td>
+              <td>{{ d.nombre_unidad || '-' }}</td>
+              <td>
+                @if (d.es_nuevo_producto) {
+                <span class="badge"
+                  style="background: #fef3c7; color: #d97706; padding: 2px 6px; border-radius: 4px; font-size: 10px;">NUEVO</span>
+                } @else {
+                <span style="color: #6b7280; font-size: 12px;">NO</span>
+                }
+              </td>
+              <td style="text-align: right; font-weight: 600;">{{ d.cantidad_pedida }}</td>
+              <td>
+                <div style="font-size: 12px;">{{ d.razon_social_proveedor || '-' }}</div>
+                <div style="font-size: 10px; color: #6b7280;">{{ d.ruc_proveedor ? 'RUC: ' + d.ruc_proveedor : '' }}
+                </div>
+              </td>
+            </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+  }
+</div>

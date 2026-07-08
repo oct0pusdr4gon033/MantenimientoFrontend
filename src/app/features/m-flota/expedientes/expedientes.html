@@ -1,0 +1,81 @@
+<div class="page-wrapper">
+
+  <!-- ── Header ─────────────────────────────────────────────── -->
+  <div class="page-header">
+    <div class="page-title-group">
+      <span class="material-symbols-outlined page-icon">folder_copy</span>
+      <div>
+        <h1 class="page-title">Gestión de Expedientes</h1>
+        <p class="page-subtitle">Administre y consulte los expedientes asociados a sus equipos.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Barra de filtros ───────────────────────────────────── -->
+  <div class="filter-bar">
+    <div class="search-wrapper">
+      <span class="material-symbols-outlined search-icon">search</span>
+      <input type="text" class="search-input" placeholder="Buscar por código de expediente..." 
+        [ngModel]="filtroCodigo()" (ngModelChange)="filtroCodigo.set($event)">
+      <button class="clear-btn" *ngIf="filtroCodigo()" (click)="filtroCodigo.set('')" title="Limpiar búsqueda">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+    <div class="filter-stats">
+      <span class="badge-count">{{ expedientesFiltrados.length }} resultado(s)</span>
+    </div>
+  </div>
+
+  <!-- ── Tabla ──────────────────────────────────────────────── -->
+  <div class="table-card">
+    
+    <div class="table-loader" *ngIf="cargando()">
+      <span class="spinner-lg"></span>
+      <p>Cargando expedientes...</p>
+    </div>
+
+    <div class="table-empty" *ngIf="!cargando() && expedientesFiltrados.length === 0">
+      <span class="material-symbols-outlined empty-icon">folder_off</span>
+      <p>No se encontraron expedientes con los criterios de búsqueda.</p>
+      <button class="btn-ghost" *ngIf="filtroCodigo()" (click)="filtroCodigo.set('')">Limpiar filtro</button>
+    </div>
+
+    <div class="table-responsive" *ngIf="!cargando() && expedientesFiltrados.length > 0">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th class="col-index">#</th>
+            <th>Código Expediente</th>
+            <th>Código Equipo</th>
+            <th>Placa Equipo</th>
+            <th>Documentos</th>
+            <th class="col-actions">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let exp of expedientesFiltrados; let i = index">
+            <td class="col-index text-muted">{{ i + 1 }}</td>
+            <td>
+              <span class="code-badge">{{ exp.codigoExp }}</span>
+            </td>
+            <td class="area-nombre">{{ exp.codEquipo || 'N/A' }}</td>
+            <td class="text-muted-sm">{{ exp.placaEquipo || 'N/A' }}</td>
+            <td>
+              <span class="docs-count">
+                {{ exp.documentos.length }} doc(s)
+              </span>
+            </td>
+            <td class="col-actions">
+              <div class="actions-group">
+                <button class="btn-icon btn-folder" (click)="verDetalles(exp.idEquipo)" title="Ver Detalles">
+                  <span class="material-symbols-outlined">visibility</span>
+                </button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+  </div>
+</div>

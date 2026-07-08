@@ -1,0 +1,230 @@
+<div class="page-wrapper">
+  <header class="page-header">
+    <div class="page-title-group">
+      <button class="btn-ghost" (click)="volver()" style="padding: 0.4rem; border: none;">
+        <span class="material-symbols-outlined">arrow_back</span>
+      </button>
+      <span class="material-symbols-outlined page-icon" style="color: #e86b1a;">shopping_bag</span>
+      <div>
+        <h1 class="page-title">Detalle de Orden de Compra</h1>
+        <p class="page-subtitle">Revisa la información de la orden emitida al proveedor.</p>
+      </div>
+    </div>
+    <div style="display: flex; gap: 0.75rem;">
+      <button class="btn-primary" (click)="imprimirOrden()"
+        style="background: #e86b1a; box-shadow: 0 3px 12px rgba(232, 107, 26, 0.3);">
+        <span class="material-symbols-outlined">print</span> Imprimir
+      </button>
+      @if (orden()?.estado === 'PENDIENTE') {
+      <button class="btn-primary" (click)="aprobarOrden()" [disabled]="procesando()"
+        style="background: linear-gradient(135deg, #10b981, #059669); box-shadow: 0 3px 12px rgba(16, 185, 129, 0.3);">
+        @if (procesando()) { <span class="spinner-sm spinner-white"></span> }
+        <span class="material-symbols-outlined" *ngIf="!procesando()">check_circle</span>
+        Aprobar Orden
+      </button>
+      }
+    </div>
+  </header>
+
+  @if (successMessage()) {
+  <div class="toast toast-success">
+    <span class="material-symbols-outlined">check_circle</span>
+    <span>{{ successMessage() }}</span>
+  </div>
+  }
+  @if (errorMessage()) {
+  <div class="toast toast-error">
+    <span class="material-symbols-outlined">error</span>
+    <span>{{ errorMessage() }}</span>
+  </div>
+  }
+
+  @if (loading()) {
+  <div class="table-card table-loader">
+    <div class="spinner-lg" style="border-top-color: #e86b1a;"></div>
+    <p>Cargando detalles de la orden...</p>
+  </div>
+  }
+
+  @if (!loading() && orden()) {
+  <!-- ── BLOQUE DE IMPRESIÓN EXCLUSIVO (Oculto en pantalla, visible al imprimir) ── -->
+  <div class="print-only-receipt">
+    <div class="receipt-header">
+      <div class="receipt-company">
+        <h2>MULTICOSAILOR SAC</h2>
+        <p>Área de Operaciones de Compras y Logística</p>
+      </div>
+      <div class="receipt-doc-details">
+        <h3>ORDEN DE COMPRA</h3>
+        <h2 class="receipt-code">{{ orden()!.nro_orden }}</h2>
+        <span class="receipt-status">ESTADO: {{ orden()!.estado }}</span>
+      </div>
+    </div>
+    
+    <h4>DATOS DEL PROVEEDOR</h4>
+    <hr />
+    <div class="receipt-metadata-grid-ot" style="grid-template-columns: repeat(2, 1fr);">
+      <div><strong>Razón Social:</strong> {{ orden()!.razon_social_proveedor }}</div>
+      <div><strong>RUC:</strong> {{ orden()!.ruc_proveedor }}</div>
+      <div><strong>Nombre Comercial:</strong> {{ proveedorDetalle()?.nombre_comercial || '-' }}</div>
+      <div><strong>Teléfono:</strong> {{ proveedorDetalle()?.telefono || '-' }}</div>
+      <div><strong>Correo:</strong> {{ proveedorDetalle()?.correo || '-' }}</div>
+      <div style="grid-column: span 2;"><strong>Dirección:</strong> {{ proveedorDetalle()?.direccion || '-' }}</div>
+    </div>
+
+    <hr style="margin-bottom: 1.5rem;" />
+    <div class="receipt-metadata-grid-ot">
+      <div><strong>Fecha de Orden:</strong> {{ orden()!.fecha_orden | date:'dd/MM/yyyy HH:mm' }}</div>
+      <div><strong>Cotización Ref:</strong> {{ orden()!.nro_cotizacion || '-' }}</div>
+    </div>
+
+    <hr />
+    <h4>MATERIALES ADQUIRIDOS</h4>
+    <table class="receipt-table">
+      <thead>
+        <tr>
+          <th>Cód.</th>
+          <th>Descripción del Material</th>
+          <th>Unidad</th>
+          <th class="text-right">Cantidad</th>
+          <th class="text-right">P. Unitario</th>
+          <th class="text-right">Subtotal</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (d of orden()!.detalles; track d.id_orden_detalle) {
+        <tr>
+          <td>{{ d.cod_materia }}</td>
+          <td>{{ d.descripcion_material }}</td>
+          <td>{{ unidadesMap()[d.id_material] || '-' }}</td>
+          <td class="text-right">{{ d.cantidad }}</td>
+          <td class="text-right">{{ d.precio_unitario | currency:'PEN':'symbol-narrow' }}</td>
+          <td class="text-right"><strong>{{ d.subtotal | currency:'PEN':'symbol-narrow' }}</strong></td>
+        </tr>
+        } @empty {
+        <tr><td colspan="6">No hay detalles.</td></tr>
+        }
+      </tbody>
+      <tfoot>
+        <tr style="border-top: 2px solid #000;">
+          <td colspan="4"></td>
+          <td class="text-right"><strong>TOTAL A PAGAR:</strong></td>
+          <td class="text-right" style="font-size: 1.1em;"><strong>{{ orden()!.total | currency:'PEN':'symbol-narrow' }}</strong></td>
+        </tr>
+      </tfoot>
+    </table>
+
+    <div class="receipt-signatures">
+      <div class="signature-line">
+        <div class="line"></div>
+        <span>Aceptación del Proveedor</span>
+      </div>
+      <div class="signature-line">
+        <div class="line"></div>
+        <span>Aprobado por Jefatura de Compras</span>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 1.5rem;" class="screen-content">
+    <!-- Cabecera de Documento -->
+    <section class="table-card" style="padding: 1.5rem;">
+      <div
+        style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.5rem; border-bottom: 1px solid #e5e7eb; padding-bottom: 1rem;">
+        <div>
+          <h2 style="font-size: 1.25rem; font-weight: 800; color: #1f2937; margin: 0 0 0.25rem 0;">Orden Nro. {{
+            orden()!.nro_orden }}</h2>
+          <p style="color: #6b7280; font-size: 0.85rem; margin: 0;">Emitida el {{ orden()!.fecha_orden |
+            date:'dd/MM/yyyy HH:mm' }}</p>
+        </div>
+        <span class="category-name-badge" [ngClass]="{
+            'text-warning-badge': orden()!.estado === 'PENDIENTE',
+            'text-success-badge': orden()!.estado === 'APROBADO' || orden()!.estado === 'EMITIDA',
+            'text-danger-badge': orden()!.estado === 'RECHAZADO' || orden()!.estado === 'ANULADA'
+          }" style="font-size: 0.9rem; padding: 0.3rem 0.8rem;">
+          {{ orden()!.estado }}
+        </span>
+      </div>
+
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem;">
+        <div>
+          <p
+            style="font-size: 0.75rem; color: #6b7280; font-weight: 600; text-transform: uppercase; margin: 0 0 0.25rem 0;">
+            Proveedor</p>
+          <p style="font-size: 0.95rem; font-weight: 600; color: #111827; margin: 0;">{{
+            orden()!.razon_social_proveedor }}</p>
+          <p style="font-size: 0.85rem; color: #4b5563; margin: 0;">RUC: {{ orden()!.ruc_proveedor }}</p>
+
+          @if (proveedorDetalle()) {
+          <div style="margin-top: 0.75rem; font-size: 0.85rem; color: #4b5563;">
+            <p style="margin: 0;"><strong>Dirección:</strong> {{ proveedorDetalle()!.direccion }}</p>
+            <p style="margin: 0;"><strong>Teléfono:</strong> {{ proveedorDetalle()!.telefono || '-' }}</p>
+            <p style="margin: 0;"><strong>Email:</strong> {{ proveedorDetalle()!.correo || '-' }}</p>
+          </div>
+          }
+        </div>
+
+        <div>
+          <p
+            style="font-size: 0.75rem; color: #6b7280; font-weight: 600; text-transform: uppercase; margin: 0 0 0.25rem 0;">
+            Cotización Base</p>
+          @if (orden()!.nro_cotizacion) {
+          <span class="code-badge" style="color: #e86b1a; background: rgba(232, 107, 26, 0.08); border-color: rgba(232, 107, 26, 0.2);">
+            {{ orden()!.nro_cotizacion }}
+          </span>
+          } @else {
+          <span class="text-muted" style="font-size: 0.9rem;">- Creada Manualmente -</span>
+          }
+        </div>
+      </div>
+    </section>
+
+    <!-- Detalles -->
+    <section class="table-card">
+      <h3
+        style="font-size: 1.05rem; font-weight: 600; color: #1f2937; margin: 0; padding: 1.25rem 1.5rem; border-bottom: 1px solid #e5e7eb;">
+        Materiales Adquiridos
+      </h3>
+
+      <div class="table-responsive">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th class="col-index">#</th>
+              <th>Cód. Material</th>
+              <th>Descripción</th>
+              <th>Unidad</th>
+              <th style="text-align: right;">Cantidad</th>
+              <th style="text-align: right;">Precio Unit. (S/.)</th>
+              <th style="text-align: right;">Subtotal (S/.)</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (d of orden()!.detalles; track d.id_orden_detalle; let i = $index) {
+            <tr>
+              <td class="col-index text-muted">{{ i + 1 }}</td>
+              <td><span class="code-badge" style="color: #e86b1a; background: rgba(232, 107, 26, 0.08); border-color: rgba(232, 107, 26, 0.2);">{{ d.cod_materia }}</span>
+              </td>
+              <td style="font-weight: 500;">{{ d.descripcion_material }}</td>
+              <td>{{ unidadesMap()[d.id_material] || '-' }}</td>
+              <td style="text-align: right;">{{ d.cantidad }}</td>
+              <td style="text-align: right;">{{ d.precio_unitario | currency:'PEN':'symbol-narrow' }}</td>
+              <td style="text-align: right; font-weight: 600;">{{ d.subtotal | currency:'PEN':'symbol-narrow' }}</td>
+            </tr>
+            }
+          </tbody>
+          <tfoot>
+            <tr style="background: #f9fafb;">
+              <td colspan="5"></td>
+              <td style="text-align: right; font-weight: 700; font-size: 1.1rem;">TOTAL A PAGAR:</td>
+              <td style="text-align: right; font-weight: 800; font-size: 1.15rem; color: #1a1a2e;">
+                {{ orden()!.total | currency:' PEN':'symbol-narrow' }}
+              </td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </section>
+  </div>
+  }
+</div>

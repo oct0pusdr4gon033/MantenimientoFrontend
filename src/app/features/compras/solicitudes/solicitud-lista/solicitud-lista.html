@@ -1,0 +1,98 @@
+<div class="page-wrapper">
+  <!-- Page Header -->
+  <header class="page-header">
+    <div class="page-title-group">
+      <span class="material-symbols-outlined page-icon" style="color: #e86b1a;">assignment</span>
+      <div>
+        <h1 class="page-title">Solicitudes de Pedido</h1>
+        <p class="page-subtitle">Gestiona las solicitudes de pedido de materiales o insumos.</p>
+      </div>
+    </div>
+    <button class="btn-primary" (click)="crearSolicitud()"
+      style="background: linear-gradient(135deg, #f97316, #e86b1a); box-shadow: 0 3px 12px rgba(232, 107, 26, 0.3);">
+      <span class="material-symbols-outlined">add</span>
+      Nueva Solicitud
+    </button>
+  </header>
+
+  <!-- Toast Notifications -->
+  @if (successMessage()) {
+    <div class="toast toast-success">
+      <span class="material-symbols-outlined">check_circle</span>
+      <span>{{ successMessage() }}</span>
+    </div>
+  }
+  @if (errorMessage()) {
+    <div class="toast toast-error">
+      <span class="material-symbols-outlined">error</span>
+      <span>{{ errorMessage() }}</span>
+    </div>
+  }
+
+  <!-- Table Card -->
+  <main class="table-card">
+    @if (loading()) {
+      <div class="table-loader">
+        <div class="spinner-lg" style="border-top-color: #e86b1a;"></div>
+        <p>Cargando lista de solicitudes...</p>
+      </div>
+    }
+
+    @if (!loading() && solicitudes().length === 0) {
+      <div class="table-empty">
+        <span class="material-symbols-outlined empty-icon">sentiment_dissatisfied</span>
+        <p>No se encontraron solicitudes registradas.</p>
+      </div>
+    }
+
+    @if (!loading() && solicitudes().length > 0) {
+      <div class="table-responsive">
+        <table class="data-table">
+        <thead>
+          <tr>
+            <th class="col-index">#</th>
+            <th>Cód. Solicitud</th>
+            <th>Empleado</th>
+            <th>Fecha</th>
+            <th>Estado</th>
+            <th class="col-actions">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (s of solicitudes(); track s.id_solicitud_pedido; let i = $index) {
+            <tr>
+              <td class="col-index text-muted">{{ i + 1 }}</td>
+              <td style="font-weight: 600;">{{ s.cod_solicitud }}</td>
+              <td>{{ s.nombre_empleado }} ({{ s.dni_empleado }})</td>
+              <td>{{ s.fecha_creacion | date:'dd/MM/yyyy HH:mm' }}</td>
+              <td>
+                <span class="category-name-badge" [ngClass]="{
+                  'text-warning-badge': s.estado === 'PENDIENTE',
+                  'text-success-badge': s.estado === 'APROBADO',
+                  'text-danger-badge': s.estado === 'RECHAZADO'
+                }">
+                  {{ s.estado }}
+                </span>
+              </td>
+              <td class="col-actions">
+                <div class="actions-group">
+                  <button class="btn-icon btn-ghost" (click)="verDetalle(s.id_solicitud_pedido)" title="Ver Detalle"
+                    style="color: #6b7280;">
+                    <span class="material-symbols-outlined">visibility</span>
+                  </button>
+                  @if (s.estado === 'PENDIENTE') {
+                    <button class="btn-icon btn-success" (click)="aprobarSolicitud(s.id_solicitud_pedido)" title="Aprobar Solicitud"
+                      style="color: #10b981; background: rgba(16, 185, 129, 0.08);">
+                      <span class="material-symbols-outlined">check_circle</span>
+                    </button>
+                  }
+                </div>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+  </main>
+</div>

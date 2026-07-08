@@ -1,0 +1,113 @@
+<div class="page-wrapper">
+  <header class="page-header">
+    <div class="page-title-group">
+      <span class="material-symbols-outlined page-icon" style="color: #e86b1a;">shopping_cart</span>
+      <div>
+        <h1 class="page-title">Órdenes de Compra</h1>
+        <p class="page-subtitle">Gestiona las órdenes de compra emitidas a los proveedores.</p>
+      </div>
+    </div>
+    <button class="btn-primary" (click)="crearOrdenManual()" style="background: #e86b1a; box-shadow: 0 3px 12px rgba(232, 107, 26, 0.3);">
+      <span class="material-symbols-outlined">add</span>
+      Nueva Orden (Manual)
+    </button>
+  </header>
+
+  @if (successMessage()) {
+    <div class="toast toast-success">
+      <span class="material-symbols-outlined">check_circle</span>
+      <span>{{ successMessage() }}</span>
+    </div>
+  }
+  @if (errorMessage()) {
+    <div class="toast toast-error">
+      <span class="material-symbols-outlined">error</span>
+      <span>{{ errorMessage() }}</span>
+    </div>
+  }
+
+  <section class="table-card">
+    <div class="table-header">
+      <div class="search-wrapper">
+        <span class="material-symbols-outlined search-icon">search</span>
+        <input type="text" class="search-input" placeholder="Buscar por número o proveedor...">
+      </div>
+      <div class="filter-wrapper">
+        <span class="material-symbols-outlined">filter_list</span>
+        <select class="filter-select">
+          <option value="ALL">Todos los estados</option>
+          <option value="PENDIENTE">Pendientes</option>
+          <option value="APROBADO">Aprobados</option>
+        </select>
+      </div>
+    </div>
+
+    @if (loading()) {
+      <div class="table-loader">
+        <div class="spinner-lg" style="border-top-color: #e86b1a;"></div>
+        <p>Cargando órdenes de compra...</p>
+      </div>
+    } @else {
+      <div class="table-responsive">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th class="col-index">#</th>
+              <th>Nro Orden</th>
+              <th>Cotización Ref.</th>
+              <th>Proveedor</th>
+              <th>Fecha de Emisión</th>
+              <th>Total (S/.)</th>
+              <th>Estado</th>
+              <th class="col-actions text-center">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (o of ordenes(); track o.id_orden_compra; let i = $index) {
+              <tr>
+                <td class="col-index text-muted">{{ i + 1 }}</td>
+                <td style="font-weight: 600;">{{ o.nro_orden }}</td>
+                <td>
+                  @if (o.nro_cotizacion) {
+                    <span class="code-badge" style="color: #e86b1a; background: rgba(232, 107, 26, 0.08);">
+                      {{ o.nro_cotizacion }}
+                    </span>
+                  } @else {
+                    <span class="text-muted">-</span>
+                  }
+                </td>
+                <td>{{ o.razon_social_proveedor }}</td>
+                <td>{{ o.fecha_orden | date:'dd/MM/yyyy' }}</td>
+                <td style="font-weight: 700;">{{ o.total | currency:'PEN':'symbol-narrow' }}</td>
+                <td>
+                  <span class="category-name-badge" [ngClass]="{
+                    'text-warning-badge': o.estado === 'PENDIENTE',
+                    'text-success-badge': o.estado === 'APROBADO' || o.estado === 'EMITIDA',
+                    'text-danger-badge': o.estado === 'RECHAZADO' || o.estado === 'ANULADA'
+                  }">
+                    {{ o.estado }}
+                  </span>
+                </td>
+                <td class="col-actions text-center">
+                  <div class="action-buttons">
+                    <button class="btn-icon btn-view" (click)="verDetalle(o.id_orden_compra)" title="Ver Detalle">
+                      <span class="material-symbols-outlined">visibility</span>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            }
+            @if (ordenes().length === 0) {
+              <tr>
+                <td colspan="8" class="text-center text-muted" style="padding: 3rem;">
+                  <span class="material-symbols-outlined" style="font-size: 3rem; color: #cbd5e1; margin-bottom: 1rem; display: block;">inventory_2</span>
+                  No se encontraron órdenes de compra registradas.
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </section>
+</div>

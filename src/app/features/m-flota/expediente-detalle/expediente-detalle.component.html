@@ -1,0 +1,298 @@
+<div class="page-wrapper">
+
+  <!-- ── Header ──────────────────────────────────────────────── -->
+  <div class="page-header">
+    <div class="page-title-group">
+      <button class="btn-back" (click)="volver()" title="Volver a equipos">
+        <span class="material-symbols-outlined">arrow_back</span>
+      </button>
+      <span class="material-symbols-outlined page-icon">folder_open</span>
+      <div>
+        <h1 class="page-title">Expediente del Equipo</h1>
+        @if (equipo()) {
+        <p class="page-subtitle">
+          <span class="code-badge">{{ equipo()!.codEqp }}</span>
+          {{ equipo()!.placaEqp ? '· Placa: ' + equipo()!.placaEqp : '' }}
+        </p>
+        }
+      </div>
+    </div>
+
+    @if (expediente()) {
+    <button class="btn-primary" (click)="abrirAgregarDocumento()">
+      <span class="material-symbols-outlined">upload_file</span>
+      Agregar Documento
+    </button>
+    }
+  </div>
+
+  <!-- ── Toasts ───────────────────────────────────────────────── -->
+  @if (mensajeExito) {
+  <div class="toast toast-success">
+    <span class="material-symbols-outlined">check_circle</span>
+    {{ mensajeExito }}
+  </div>
+  }
+  @if (mensajeError && !modalMode()) {
+  <div class="toast toast-error">
+    <span class="material-symbols-outlined">error</span>
+    {{ mensajeError }}
+  </div>
+  }
+
+  <!-- ── Loader ────────────────────────────────────────────────── -->
+  @if (cargando()) {
+  <div class="loader-center">
+    <span class="spinner-lg"></span>
+    <p>Cargando expediente...</p>
+  </div>
+  } @else {
+
+    <!-- ── SIN EXPEDIENTE ─────────────────────────────────────── -->
+    @if (!expediente()) {
+    <div class="empty-state-card">
+      <div class="empty-state-icon">
+        <span class="material-symbols-outlined">folder_off</span>
+      </div>
+      <h2 class="empty-state-title">Este equipo no tiene expediente</h2>
+      <p class="empty-state-desc">
+        Un expediente agrupa todos los documentos del equipo (SOAT, tarjeta de propiedad, revisión técnica, etc.).<br>
+        Cree el expediente para comenzar a registrar documentos.
+      </p>
+      <button class="btn-primary btn-lg" (click)="abrirCrearExpediente()">
+        <span class="material-symbols-outlined">create_new_folder</span>
+        Crear Expediente
+      </button>
+    </div>
+
+    } @else {
+
+    <!-- ── INFO DEL EXPEDIENTE ────────────────────────────────── -->
+    <div class="info-card">
+      <div class="info-card-header">
+        <span class="material-symbols-outlined info-icon">description</span>
+        <div>
+          <span class="info-label">Expediente</span>
+          <span class="info-value code-badge-lg">{{ expediente()!.codigoExp }}</span>
+        </div>
+      </div>
+      <div class="info-stats">
+        <div class="info-stat">
+          <span class="material-symbols-outlined">inventory_2</span>
+          <span>{{ expediente()!.documentos.length }} documento(s) registrado(s)</span>
+        </div>
+        @if (equipo()) {
+        <div class="info-stat">
+          <span class="material-symbols-outlined">construction</span>
+          <span>{{ equipo()!.nombreModelo }} · {{ equipo()!.nombreMarca }}</span>
+        </div>
+        }
+      </div>
+    </div>
+
+    <!-- ── GRID DE DOCUMENTOS ──────────────────────────────────── -->
+    @if (expediente()!.documentos.length === 0) {
+    <div class="empty-docs">
+      <span class="material-symbols-outlined">folder_open</span>
+      <p>El expediente aún no tiene documentos registrados.</p>
+      <button class="btn-primary" (click)="abrirAgregarDocumento()">
+        <span class="material-symbols-outlined">upload_file</span>
+        Agregar primer documento
+      </button>
+    </div>
+    } @else {
+    <div class="docs-grid">
+      @for (doc of expediente()!.documentos; track doc.idExpedienteDocumento) {
+      <div class="doc-card" [class.doc-vencido]="doc.estaVencido" (click)="verDocumento(doc)">
+        <div class="doc-card-top">
+          <div class="doc-type-icon">
+            <span class="material-symbols-outlined">description</span>
+          </div>
+          <span class="doc-badge" [ngClass]="badgeVencido(doc)">{{ textoVencimiento(doc) }}</span>
+        </div>
+        <div class="doc-card-body">
+          <h3 class="doc-name">{{ doc.nombreTipoDocumento }}</h3>
+          <span class="doc-code">{{ doc.codTipoDocumento }}</span>
+        </div>
+        <div class="doc-card-footer">
+          <div class="doc-date">
+            <span class="material-symbols-outlined">event</span>
+            <span>Vence: {{ doc.fechaVencimiento | date:'dd/MM/yyyy' }}</span>
+          </div>
+          <div class="doc-actions">
+            <button class="btn-action-edit" (click)="abrirEditarDocumento(doc); $event.stopPropagation()">
+              <span class="material-symbols-outlined">edit</span>
+              Editar
+            </button>
+            <button class="btn-view" (click)="verDocumento(doc); $event.stopPropagation()">
+              <span class="material-symbols-outlined">open_in_new</span>
+              Ver
+            </button>
+          </div>
+        </div>
+      </div>
+      }
+    </div>
+    }
+
+    } <!-- fin @else expediente -->
+  } <!-- fin @else cargando -->
+
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- Modal Crear Expediente                                   -->
+<!-- ═══════════════════════════════════════════════════════ -->
+@if (modalMode() === 'crear-expediente') {
+<div class="modal-backdrop" (click)="cerrarModal()">
+  <div class="modal-card" (click)="$event.stopPropagation()">
+
+    <div class="modal-header">
+      <div class="modal-title-group">
+        <span class="material-symbols-outlined modal-icon">create_new_folder</span>
+        <h2 class="modal-title">Crear Expediente</h2>
+      </div>
+      <button class="modal-close" (click)="cerrarModal()">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+
+    <div class="modal-body">
+      @if (mensajeError) {
+      <div class="form-error-alert">
+        <span class="material-symbols-outlined">error</span>
+        {{ mensajeError }}
+      </div>
+      }
+
+      <div class="form-group">
+        <label for="form-cod-exp">Código del Expediente *</label>
+        <div class="input-wrapper">
+          <span class="input-icon material-symbols-outlined">tag</span>
+          <input id="form-cod-exp" type="text" [(ngModel)]="formExpediente.codigoExp"
+            name="codigoExp" placeholder="Ej: EXP-001" maxlength="20" />
+        </div>
+        <span class="field-hint">Máximo 20 caracteres. Se guardará en mayúsculas.</span>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn-ghost" (click)="cerrarModal()" [disabled]="guardando()">Cancelar</button>
+      <button class="btn-primary" (click)="guardarExpediente()" [disabled]="guardando()">
+        @if (guardando()) {
+        <span class="spinner-sm spinner-white"></span>
+        Guardando...
+        } @else {
+        <span class="material-symbols-outlined">save</span>
+        Crear Expediente
+        }
+      </button>
+    </div>
+  </div>
+</div>
+}
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- Modal Agregar/Editar Documento                           -->
+<!-- ═══════════════════════════════════════════════════════ -->
+@if (modalMode() === 'agregar-documento' || modalMode() === 'editar-documento') {
+<div class="modal-backdrop" (click)="cerrarModal()">
+  <div class="modal-card modal-lg" (click)="$event.stopPropagation()">
+
+    <div class="modal-header">
+      <div class="modal-title-group">
+        <span class="material-symbols-outlined modal-icon">
+          {{ modalMode() === 'agregar-documento' ? 'upload_file' : 'edit' }}
+        </span>
+        <h2 class="modal-title">
+          {{ modalMode() === 'agregar-documento' ? 'Agregar Documento' : 'Editar Documento' }}
+        </h2>
+      </div>
+      <button class="modal-close" (click)="cerrarModal()">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+
+    <div class="modal-body">
+      @if (mensajeError) {
+      <div class="form-error-alert">
+        <span class="material-symbols-outlined">error</span>
+        {{ mensajeError }}
+      </div>
+      }
+
+      <!-- Tipo de Documento -->
+      <div class="form-group">
+        <label for="form-tipo-doc">Tipo de Documento *</label>
+        <div class="input-wrapper select-wrapper">
+          <span class="input-icon material-symbols-outlined">category</span>
+          <select id="form-tipo-doc" [(ngModel)]="formDocumento.codTipoDocumento" name="codTipoDocumento">
+            <option value="" disabled>-- Seleccione tipo de documento --</option>
+            @for (tipo of tiposDocumento(); track tipo.codTipoDocumento) {
+            <option [value]="tipo.codTipoDocumento">{{ tipo.nombreTipo }}</option>
+            }
+          </select>
+        </div>
+      </div>
+
+      <!-- Fechas -->
+      <div class="form-row">
+        <div class="form-group">
+          <label for="form-fecha-reg">Fecha de Registro *</label>
+          <div class="input-wrapper">
+            <span class="input-icon material-symbols-outlined">calendar_today</span>
+            <input id="form-fecha-reg" type="date" [(ngModel)]="formDocumento.fechaRegistro"
+              name="fechaRegistro" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="form-fecha-venc">Fecha de Vencimiento *</label>
+          <div class="input-wrapper">
+            <span class="input-icon material-symbols-outlined">event_busy</span>
+            <input id="form-fecha-venc" type="date" [(ngModel)]="formDocumento.fechaVencimiento"
+              name="fechaVencimiento" />
+          </div>
+        </div>
+      </div>
+
+      <!-- Archivo PDF -->
+      <div class="form-group">
+        <label for="form-doc-file">Subir Archivo PDF</label>
+        <div class="input-wrapper" style="padding-left: 0.5rem; background: #fff;">
+          <input id="form-doc-file" type="file" accept="application/pdf" (change)="onFileSelected($event)" style="padding: 0.5rem;" />
+        </div>
+        @if (subiendoArchivo()) {
+        <span class="field-hint text-primary" style="display: flex; align-items: center; gap: 0.5rem;">
+          <span class="spinner-sm"></span> Subiendo al servidor...
+        </span>
+        } @else {
+        <span class="field-hint">Seleccione un archivo PDF. Se generará automáticamente la URL.</span>
+        }
+      </div>
+
+      <!-- URL del Documento PDF (Lectura) -->
+      <div class="form-group">
+        <label for="form-doc-url">URL del Documento (Generada)</label>
+        <div class="input-wrapper input-disabled">
+          <span class="input-icon material-symbols-outlined">link</span>
+          <input id="form-doc-url" type="url" [(ngModel)]="formDocumento.documentoUrl"
+            name="documentoUrl" placeholder="La URL se generará al subir el archivo..." readonly />
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn-ghost" (click)="cerrarModal()" [disabled]="guardando()">Cancelar</button>
+      <button class="btn-primary" (click)="guardarDocumento()" [disabled]="guardando()">
+        @if (guardando()) {
+        <span class="spinner-sm spinner-white"></span>
+        Guardando...
+        } @else {
+        <span class="material-symbols-outlined">save</span>
+        {{ modalMode() === 'agregar-documento' ? 'Agregar Documento' : 'Guardar Cambios' }}
+        }
+      </button>
+    </div>
+  </div>
+</div>
+}

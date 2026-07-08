@@ -1,0 +1,178 @@
+<div class="page-wrapper">
+
+  <!-- ── Header de página ──────────────────────────────────── -->
+  <div class="page-header">
+    <div class="page-title-group">
+      <button class="btn-back" routerLink="/GestionMantenimiento/plan-mantenimiento" title="Regresar al listado">
+        <span class="material-symbols-outlined">arrow_back</span>
+      </button>
+      <span class="material-symbols-outlined page-icon">assignment_turned_in</span>
+      <div>
+        <h1 class="page-title">Detalle de la Hoja de Ruta</h1>
+        <p class="page-subtitle">Información general, actividades, materiales y personal asignado</p>
+      </div>
+    </div>
+
+    @if (plan()) {
+      <button class="btn-primary" [routerLink]="['/GestionMantenimiento/plan-mantenimiento/editar', plan()!.id_plan_mant]">
+        <span class="material-symbols-outlined">edit</span>
+        Editar Hoja de Ruta
+      </button>
+    }
+  </div>
+
+  <!-- ── Estados de carga y error ──────────────────────────── -->
+  @if (cargando()) {
+    <div class="status-card text-center">
+      <span class="material-symbols-outlined spinner-icon">sync</span>
+      <p>Cargando información de la hoja de ruta...</p>
+    </div>
+  } @else if (error() || !plan()) {
+    <div class="status-card text-center">
+      <span class="material-symbols-outlined error-icon">error</span>
+      <p class="text-error">No se pudo cargar la hoja de ruta solicitada.</p>
+      <button class="btn-primary" style="margin-top: 1rem;" routerLink="/GestionMantenimiento/plan-mantenimiento">
+        Volver al listado
+      </button>
+    </div>
+  } @else {
+
+    <div class="details-grid">
+      
+      <!-- ── Tarjeta 1: Información General ───────────────────── -->
+      <div class="detail-card">
+        <div class="card-header">
+          <span class="material-symbols-outlined card-icon">info</span>
+          <h2 class="card-title">Información General</h2>
+        </div>
+        <div class="card-body general-info-grid">
+
+          <div class="info-group">
+            <label>Estrategia de Mantenimiento</label>
+            <span class="info-value">{{ plan()!.estrategia?.cod_estrategia }} - {{ plan()!.estrategia?.titulo_estrategia }}</span>
+          </div>
+          <div class="info-group">
+            <label>Fecha de Creación</label>
+            <span class="info-value">{{ formatearFecha(plan()!.fecha_creacion) }}</span>
+          </div>
+
+          <div class="info-group">
+            <label>Niveles PM Incluidos</label>
+            <div>
+              <span class="threshold-badge" style="background-color: #f8fafc; color: #0f172a; border-color: #cbd5e1; font-weight: 700;">
+                {{ obtenerPmsIncluidos() }}
+              </span>
+            </div>
+          </div>
+
+          <div class="info-group">
+            <label>Estado del Plan</label>
+            <div>
+              <span class="status-indicator" [class.status-active]="plan()!.estado" [class.status-inactive]="!plan()!.estado">
+                {{ plan()!.estado ? 'Activo' : 'Inactivo' }}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Tarjeta 2: Actividades Asignadas (Hoja de Ruta) ───── -->
+      <div class="detail-card" style="grid-column: span 2;">
+        <div class="card-header">
+          <span class="material-symbols-outlined card-icon text-blue">engineering</span>
+          <h2 class="card-title">Hoja de Ruta y Actividades</h2>
+          <span class="badge-count count-blue">{{ plan()!.actividades.length }}</span>
+        </div>
+        <div class="card-body no-padding">
+          <div class="table-responsive">
+            <table class="detail-table">
+              <thead>
+                <tr>
+                  <th class="col-index">#</th>
+                  <th>PM</th>
+                  <th>Sistema</th>
+                  <th>Actividad</th>
+                  <th>Material</th>
+                  <th class="text-right">Cantidad</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (act of plan()!.actividades; track act.id_plan_mant + '-' + act.id_actividad + '-' + act.id_detalle_estrg; let i = $index) {
+                  <tr>
+                    <td class="col-index text-muted">{{ i + 1 }}</td>
+                    <td><span style="font-weight: 700; color: #475569;">{{ act.tipo_pm }}</span></td>
+                    <td><span class="code-badge-sm">{{ act.cod_sistema }}</span></td>
+                    <td class="font-medium">{{ act.nombre_actividad }}</td>
+                    <td>
+                      @if (act.id_material) {
+                        <span class="code-badge-sm color-green" style="margin-right: 0.5rem;">{{ act.cod_materia }}</span>
+                        <span>{{ act.descripcion_material }}</span>
+                      } @else {
+                        <span class="text-muted" style="font-size: 0.82rem;">-</span>
+                      }
+                    </td>
+                    <td class="text-right font-bold" style="color: #059669;">
+                      {{ act.id_material ? act.cantidad + ' u.' : '-' }}
+                    </td>
+                  </tr>
+                } @empty {
+                  <tr>
+                    <td colspan="6">
+                      <div class="table-empty-small">
+                        <span class="material-symbols-outlined">engineering</span>
+                        <p>No hay actividades registradas en esta hoja de ruta.</p>
+                      </div>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Tarjeta 3: Personal Requerido ───────────────────── -->
+      <div class="detail-card">
+        <div class="card-header">
+          <span class="material-symbols-outlined card-icon text-purple">groups</span>
+          <h2 class="card-title">Personal Técnico Requerido</h2>
+          <span class="badge-count count-purple">{{ plan()!.personales.length }}</span>
+        </div>
+        <div class="card-body no-padding">
+          <div class="table-responsive">
+            <table class="detail-table">
+              <thead>
+                <tr>
+                  <th class="col-index">#</th>
+                  <th>Rol Técnico / Especialidad</th>
+                  <th class="text-right">Cantidad de Personal</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (per of plan()!.personales; track per.id_plan_personal; let i = $index) {
+                  <tr>
+                    <td class="col-index text-muted">{{ i + 1 }}</td>
+                    <td class="font-medium">{{ per.nombre_rol || 'Sin especificar' }}</td>
+                    <td class="text-right font-bold">{{ per.cantidad }}</td>
+                  </tr>
+                } @empty {
+                  <tr>
+                    <td colspan="3">
+                      <div class="table-empty-small">
+                        <span class="material-symbols-outlined">groups</span>
+                        <p>No se ha asignado personal técnico a este plan.</p>
+                      </div>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+  }
+
+</div>

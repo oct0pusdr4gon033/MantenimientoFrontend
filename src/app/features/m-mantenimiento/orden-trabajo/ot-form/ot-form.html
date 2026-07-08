@@ -1,0 +1,517 @@
+<div class="fullscreen-wrapper">
+  <!-- ── Header Superior ────────────────────────────────────────── -->
+  <div class="fullscreen-header">
+    <div class="header-left">
+      <button class="btn-back" (click)="cancelar()">
+        <span class="material-symbols-outlined">arrow_back</span>
+      </button>
+      <div class="header-titles">
+        <h1>Nueva Orden de Trabajo Manual</h1>
+        <p>Registro manual de intervenciones preventivas y correctivas para la flota</p>
+      </div>
+    </div>
+    <div class="header-actions">
+      <button class="btn-secondary" (click)="cancelar()" [disabled]="guardando()">Cancelar</button>
+      <button class="btn-primary" (click)="guardar()" [disabled]="guardando() || cargando()">
+        @if (guardando()) {
+        <span class="spinner"></span> Guardando...
+        } @else {
+        <span class="material-symbols-outlined">save</span> Generar Orden
+        }
+      </button>
+    </div>
+  </div>
+
+  <!-- ── Notificaciones flotantes ────────────────────────────── -->
+  @if (mensajeError()) {
+  <div class="alert alert-danger">
+    <span class="material-symbols-outlined">error</span>
+    <span>{{ mensajeError() }}</span>
+  </div>
+  }
+  @if (mensajeExito()) {
+  <div class="alert alert-success">
+    <span class="material-symbols-outlined">check_circle</span>
+    <span>{{ mensajeExito() }}</span>
+  </div>
+  }
+
+  <!-- ── Contenedor Principal (2 Columnas) ───────────────────────── -->
+  @if (cargando()) {
+  <div class="loading-state">
+    <span class="spinner-large"></span>
+    <p>Cargando catálogos de mantenimiento...</p>
+  </div>
+  } @else {
+  <div class="form-container">
+
+    <!-- COLUMNA IZQUIERDA: Configuración y Equipo -->
+    <div class="form-column">
+      <!-- Card 1: Tipo y Datos Generales -->
+      <div class="form-card">
+        <div class="card-header">
+          <span class="material-symbols-outlined card-icon">settings</span>
+          <h2>Configuración General</h2>
+        </div>
+
+        <div class="card-body">
+          <!-- Selector Tipo de OT -->
+          <div class="input-group">
+            <label>Tipo de Orden de Trabajo</label>
+            <div class="type-selector">
+              <button type="button" class="type-btn" [class.active]="tipoOt() === 'PREVENTIVA'"
+                (click)="setTipoOt('PREVENTIVA')">
+                <span class="material-symbols-outlined">build_circle</span>
+                <div class="type-info">
+                  <strong>PREVENTIVA</strong>
+                  <span>Planificada por nivel PM</span>
+                </div>
+              </button>
+              <button type="button" class="type-btn" [class.active]="tipoOt() === 'CORRECTIVA'"
+                (click)="setTipoOt('CORRECTIVA')">
+                <span class="material-symbols-outlined">report_problem</span>
+                <div class="type-info">
+                  <strong>CORRECTIVA</strong>
+                  <span>No programada (Falla)</span>
+                </div>
+              </button>
+            </div>
+          </div>
+
+          <!-- Campos específicos de CORRECTIVA -->
+          @if (tipoOt() === 'CORRECTIVA') {
+          <div class="form-grid-2">
+            <div class="input-group">
+              <label for="hora_intervencion">Hora de Inicio de Intervención</label>
+              <input type="datetime-local" id="hora_intervencion" [ngModel]="horaIntervencion()"
+                (ngModelChange)="horaIntervencion.set($event)" />
+            </div>
+            <div class="input-group">
+              <label for="horometro_falla">Horómetro de Falla *</label>
+              <input type="number" id="horometro_falla" [ngModel]="horometroFalla()"
+                (ngModelChange)="horometroFalla.set($event)" placeholder="Ej. 1245.5" />
+            </div>
+          </div>
+
+          <div class="form-grid-2">
+            <div class="input-group">
+              <label for="id_sistema">Sistema Afectado *</label>
+              <select id="id_sistema" [ngModel]="sistemaSeleccionadoId()" (ngModelChange)="onSistemaChange($event)">
+                <option [value]="null">-- Seleccione Sistema --</option>
+                @for (s of sistemas(); track s.id_sistema) {
+                <option [value]="s.id_sistema">{{ s.nombre_sist }} ({{ s.cod_sist }})</option>
+                }
+              </select>
+            </div>
+            <div class="input-group">
+              <label for="id_subsistema">Subsistema Afectado *</label>
+              <select id="id_subsistema" [ngModel]="subsistemaSeleccionadoId()" [disabled]="!sistemaSeleccionadoId()"
+                (ngModelChange)="onSubsistemaChange($event)">
+                <option [value]="null">-- Seleccione Subsistema --</option>
+                @for (sub of subsistemas(); track sub.id_subsistema) {
+                <option [value]="sub.id_subsistema">{{ sub.nombre_subsist }} ({{ sub.cod_subsist }})</option>
+                }
+              </select>
+            </div>
+          </div>
+
+          <div class="input-group">
+            <label for="desc_falla">Descripción de la Falla / Trabajo a Realizar *</label>
+            <textarea id="desc_falla" [ngModel]="descripcionFalla()" (ngModelChange)="descripcionFalla.set($event)"
+              placeholder="Describa el problema detallado (ej: se malogró una manguera hidráulica)..."
+              rows="3"></textarea>
+          </div>
+          }
+
+          <!-- Observaciones / Detalle -->
+          <div class="input-group">
+            <label for="obs">
+              Observaciones Generales / Justificación
+            </label>
+            <textarea id="obs" [ngModel]="observaciones()" (ngModelChange)="observaciones.set($event)"
+              placeholder="Ingrese comentarios adicionales sobre la intervención..." rows="4"></textarea>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 2: Selección de Equipo -->
+      <div class="form-card">
+        <div class="card-header">
+          <span class="material-symbols-outlined card-icon">local_shipping</span>
+          <h2>Equipo Destino</h2>
+        </div>
+
+        <div class="card-body">
+          @if (equipoSeleccionado()) {
+          <div class="selected-entity-card">
+            <div class="entity-avatar">
+              <span class="material-symbols-outlined">directions_car</span>
+            </div>
+            <div class="entity-details">
+              <h3>{{ equipoSeleccionado()?.codEqp }}</h3>
+              <div class="entity-badges">
+                <span class="badge badge-primary">Placa: {{ equipoSeleccionado()?.placaEqp }}</span>
+                <span class="badge badge-dark">Horómetro: {{ equipoSeleccionado()?.horometroActual }} H</span>
+              </div>
+              <p class="entity-meta">
+                <strong>Flota:</strong> {{ equipoSeleccionado()?.nombreFlota || 'N/A' }} |
+                <strong>Modelo:</strong> {{ equipoSeleccionado()?.nombreModelo || 'N/A' }}
+              </p>
+            </div>
+            <button class="btn-icon-danger" (click)="equipoSeleccionado.set(null); planAsociado.set(null)">
+              <span class="material-symbols-outlined">delete</span>
+            </button>
+          </div>
+          } @else {
+          <div class="empty-entity-placeholder" (click)="abrirEquipoModal()">
+            <span class="material-symbols-outlined placeholder-icon">add_circle</span>
+            <p>Seleccionar Equipo de la Flota</p>
+            <span>Haga clic para buscar en el inventario</span>
+          </div>
+          }
+        </div>
+      </div>
+    </div>
+
+    <!-- COLUMNA DERECHA: Asignación de PMs, Personal y Materiales -->
+    <div class="form-column">
+
+      <!-- SECCIÓN PREVENTIVA: PMs a Cubrir -->
+      @if (tipoOt() === 'PREVENTIVA') {
+      <div class="form-card">
+        <div class="card-header">
+          <span class="material-symbols-outlined card-icon">tune</span>
+          <h2>PMs del Plan a Incluir</h2>
+        </div>
+
+        <div class="card-body">
+          @if (!equipoSeleccionado()) {
+          <p class="helper-text warning"><span class="material-symbols-outlined">info</span> Seleccione un equipo
+            primero para cargar sus niveles PM.</p>
+          } @else if (!planAsociado()) {
+          <p class="helper-text error"><span class="material-symbols-outlined">warning</span> El equipo no cuenta con un
+            Plan de Mantenimiento Activo. Registre un plan o seleccione una OT Correctiva.</p>
+          } @else {
+          <div class="pm-checkbox-list">
+            <p class="plan-title">Plan: <strong>{{ planAsociado()?.estrategia?.titulo_estrategia }}</strong></p>
+
+            <div class="checkbox-grid">
+              @for (pm of planAsociado()?.estrategia?.detalles; track pm.id_detalle_estrg) {
+              <div class="pm-checkbox-card" [class.checked]="pmsSeleccionados().includes(pm.id_detalle_estrg)"
+                (click)="togglePM(pm.id_detalle_estrg)">
+                <div class="checkbox-box">
+                  @if (pmsSeleccionados().includes(pm.id_detalle_estrg)) {
+                  <span class="material-symbols-outlined font-orange">check_box</span>
+                  } @else {
+                  <span class="material-symbols-outlined">check_box_outline_blank</span>
+                  }
+                </div>
+                <div class="pm-info">
+                  <span class="pm-badge">{{ pm.tipo_pm }}</span>
+                  <span class="pm-umbral">Cada {{ pm.umbral_mant }} {{ pm.uni_med }}</span>
+                </div>
+              </div>
+              }
+            </div>
+          </div>
+          }
+        </div>
+      </div>
+      }
+
+      <!-- Card: Personal Técnico Asignado -->
+      <div class="form-card">
+        <div class="card-header header-with-action">
+          <div class="title-group">
+            <span class="material-symbols-outlined card-icon">group</span>
+            <h2>Personal Técnico Asignado</h2>
+          </div>
+          <button class="btn-ghost-primary" (click)="abrirPersonalModal()">
+            <span class="material-symbols-outlined">person_add</span> Asignar
+          </button>
+        </div>
+
+        <div class="card-body">
+          @if (personalSeleccionado().length === 0) {
+          <div class="empty-list-state">
+            <span class="material-symbols-outlined font-muted">engineering</span>
+            <p>No se ha asignado personal técnico</p>
+            <span>Asigne mecánicos que participarán en la intervención.</span>
+          </div>
+          } @else {
+          <div class="selected-list">
+            @for (p of personalSeleccionado(); track p.dni_empleado) {
+            <div class="selected-row">
+              <div class="row-info">
+                <strong>{{ p.nombre }} {{ p.apellido1 }}</strong>
+                <span>DNI: {{ p.dni_empleado }} | Rol: {{ p.nombreRol || 'Técnico' }}</span>
+              </div>
+              <button class="btn-icon-danger" (click)="removerPersonal(p.dni_empleado)">
+                <span class="material-symbols-outlined">delete</span>
+              </button>
+            </div>
+            }
+          </div>
+          }
+        </div>
+      </div>
+
+      <!-- SECCIÓN CORRECTIVA: Materiales Requeridos -->
+      @if (tipoOt() === 'CORRECTIVA') {
+      <div class="form-card">
+        <div class="card-header header-with-action">
+          <div class="title-group">
+            <span class="material-symbols-outlined card-icon">shopping_bag</span>
+            <h2>Repuestos y Materiales</h2>
+          </div>
+          <button class="btn-ghost-primary" (click)="abrirMaterialModal()">
+            <span class="material-symbols-outlined">add_shopping_cart</span> Agregar Material
+          </button>
+        </div>
+
+        <div class="card-body">
+          @if (materialesSeleccionados().length === 0) {
+          <div class="empty-list-state">
+            <span class="material-symbols-outlined font-muted">inventory_2</span>
+            <p>No se han registrado materiales</p>
+            <span>Agregue los repuestos necesarios del almacén.</span>
+          </div>
+          } @else {
+          <div class="selected-list">
+            @for (m of materialesSeleccionados(); track m.id_material_ref) {
+            <div class="selected-row">
+              <div class="row-info">
+                <strong>{{ m.descripcion_material }}</strong>
+                <span>Cod: {{ m.cod_materia }} | Requerido: <strong>{{ m.cantidad_requerida }} und</strong></span>
+              </div>
+              <button class="btn-icon-danger" (click)="removerMaterial(m.id_material_ref)">
+                <span class="material-symbols-outlined">delete</span>
+              </button>
+            </div>
+            }
+          </div>
+          }
+        </div>
+      </div>
+      }
+    </div>
+  </div>
+  }
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════
+     MODAL 1: SELECCIONAR EQUIPO
+     ══════════════════════════════════════════════════════════════ -->
+@if (showEquipoModal()) {
+<div class="modal-backdrop" (click)="cerrarEquipoModal()">
+  <div class="modal-card modal-lg" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <div class="modal-title-group">
+        <span class="material-symbols-outlined modal-icon font-orange">local_shipping</span>
+        <h2 class="modal-title">Seleccionar Equipo</h2>
+      </div>
+      <button class="modal-close" (click)="cerrarEquipoModal()">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+
+    <div class="modal-body">
+      <!-- Buscador -->
+      <div class="modal-search-box">
+        <span class="material-symbols-outlined">search</span>
+        <input type="text" [ngModel]="busquedaEquipo()" (ngModelChange)="busquedaEquipo.set($event)"
+          placeholder="Buscar por código, placa, flota..." />
+      </div>
+
+      <!-- Tabla de Equipos -->
+      <div class="modal-table-container">
+        <table class="modal-table">
+          <thead>
+            <tr>
+              <th>Código</th>
+              <th>Placa</th>
+              <th>Flota</th>
+              <th>Horómetro</th>
+              <th>Estado</th>
+              <th style="width: 80px">Acción</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (eq of equiposFiltrados(); track eq.idEquipo) {
+            <tr>
+              <td><strong>{{ eq.codEqp }}</strong></td>
+              <td>{{ eq.placaEqp }}</td>
+              <td>{{ eq.nombreFlota || 'N/A' }}</td>
+              <td>{{ eq.horometroActual }} H</td>
+              <td>
+                <span class="badge"
+                  [class.badge-success]="eq.estadoOperativo === 'OPERATIVO' || eq.estadoOperativo === 'DISPONIBLE'"
+                  [class.badge-danger]="eq.estadoOperativo === 'MANTENIMIENTO'">
+                  {{ eq.estadoOperativo }}
+                </span>
+              </td>
+              <td>
+                <button class="btn-action-primary" (click)="seleccionarEquipo(eq)">Seleccionar</button>
+              </td>
+            </tr>
+            } @empty {
+            <tr>
+              <td colspan="6" class="text-center py-6">No se encontraron equipos coincidentes.</td>
+            </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+}
+
+<!-- ══════════════════════════════════════════════════════════════
+     MODAL 2: SELECCIONAR PERSONAL TÉCNICO
+     ══════════════════════════════════════════════════════════════ -->
+@if (showPersonalModal()) {
+<div class="modal-backdrop" (click)="cerrarPersonalModal()">
+  <div class="modal-card modal-lg" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <div class="modal-title-group">
+        <span class="material-symbols-outlined modal-icon font-orange">engineering</span>
+        <h2 class="modal-title">Asignar Personal Técnico</h2>
+      </div>
+      <button class="modal-close" (click)="cerrarPersonalModal()">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+
+    <div class="modal-body">
+      <div class="modal-search-box">
+        <span class="material-symbols-outlined">search</span>
+        <input type="text" [ngModel]="busquedaPersonal()" (ngModelChange)="busquedaPersonal.set($event)"
+          placeholder="Buscar por nombre, DNI, rol..." />
+      </div>
+
+      <div class="modal-table-container">
+        <table class="modal-table">
+          <thead>
+            <tr>
+              <th>DNI</th>
+              <th>Nombre Completo</th>
+              <th>Rol</th>
+              <th style="width: 80px">Acción</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (p of personalFiltrado(); track p.dni_empleado) {
+            <tr>
+              <td>{{ p.dni_empleado }}</td>
+              <td><strong>{{ p.nombre }} {{ p.apellido1 }}</strong></td>
+              <td>{{ p.nombreRol || 'Técnico' }}</td>
+              <td>
+                <button class="btn-action-primary" (click)="seleccionarPersonal(p)">Asignar</button>
+              </td>
+            </tr>
+            } @empty {
+            <tr>
+              <td colspan="4" class="text-center py-6">No se encontraron técnicos disponibles.</td>
+            </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+}
+
+<!-- ══════════════════════════════════════════════════════════════
+     MODAL 3: SELECCIONAR MATERIALES (Correctiva)
+     ══════════════════════════════════════════════════════════════ -->
+@if (showMaterialModal()) {
+<div class="modal-backdrop" (click)="cerrarMaterialModal()">
+  <div class="modal-card modal-lg" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <div class="modal-title-group">
+        <span class="material-symbols-outlined modal-icon font-orange">inventory_2</span>
+        <h2 class="modal-title">Agregar Repuesto / Material</h2>
+      </div>
+      <button class="modal-close" (click)="cerrarMaterialModal()">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+
+    <div class="modal-body modal-split-body">
+      <!-- Parte Izquierda: Tabla buscador -->
+      <div class="modal-step-section material-search-side">
+        <div class="modal-search-box">
+          <span class="material-symbols-outlined">search</span>
+          <input type="text" [ngModel]="busquedaMaterial()" (ngModelChange)="busquedaMaterial.set($event)"
+            placeholder="Buscar código o descripción..." />
+        </div>
+
+        <div class="modal-table-container mini-table">
+          <table class="modal-table">
+            <thead>
+              <tr>
+                <th>Código</th>
+                <th>Descripción</th>
+                <th style="width: 60px">Seleccionar</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (m of materialesFiltrados(); track m.id_material) {
+              <tr [class.row-selected]="materialSeleccionadoTemp()?.id_material === m.id_material"
+                (click)="seleccionarMaterialTemp(m)">
+                <td>{{ m.cod_materia }}</td>
+                <td><strong>{{ m.descripcion }}</strong></td>
+                <td class="text-center">
+                  <span class="material-symbols-outlined font-orange">
+                    {{ materialSeleccionadoTemp()?.id_material === m.id_material ? 'radio_button_checked' :
+                    'radio_button_unchecked' }}
+                  </span>
+                </td>
+              </tr>
+              } @empty {
+              <tr>
+                <td colspan="3" class="text-center py-4">No se encontraron materiales.</td>
+              </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Parte Derecha: Cantidad y Confirmación -->
+      <div class="modal-step-section material-confirm-side">
+        @if (materialSeleccionadoTemp()) {
+        <div class="confirm-material-card">
+          <h3>Material Seleccionado</h3>
+          <div class="mat-details">
+            <span class="mat-code">{{ materialSeleccionadoTemp()?.cod_materia }}</span>
+            <span class="mat-desc">{{ materialSeleccionadoTemp()?.descripcion }}</span>
+          </div>
+
+          <div class="quantity-picker">
+            <label>Cantidad Requerida</label>
+            <div class="picker-controls">
+              <button class="picker-btn" (click)="decrementarCantidad()">-</button>
+              <input type="number" class="picker-input" [ngModel]="cantidadMaterialTemp()"
+                (ngModelChange)="cantidadMaterialTemp.set($event)" />
+              <button class="picker-btn" (click)="incrementarCantidad()">+</button>
+            </div>
+          </div>
+
+          <button class="btn-primary w-full mt-4" (click)="confirmarMaterial()">
+            <span class="material-symbols-outlined">check_circle</span> Agregar al Listado
+          </button>
+        </div>
+        } @else {
+        <div class="select-material-placeholder">
+          <span class="material-symbols-outlined placeholder-icon font-muted">touch_app</span>
+          <p>Seleccione un material de la lista de la izquierda para configurar su cantidad.</p>
+        </div>
+        }
+      </div>
+    </div>
+  </div>
+</div>
+}

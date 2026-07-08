@@ -1,0 +1,179 @@
+<div class="page-wrapper">
+
+  <!-- ── Header de página ──────────────────────────────────── -->
+  <div class="page-header">
+    <div class="page-title-group">
+      <span class="material-symbols-outlined page-icon">category</span>
+      <div>
+        <h1 class="page-title">Categorías de Material</h1>
+        <p class="page-subtitle">Gestión y administración del catálogo de categorías de materiales</p>
+      </div>
+    </div>
+    <button class="btn-primary" (click)="abrirCrear()">
+      <span class="material-symbols-outlined">add</span>
+      Nueva Categoría
+    </button>
+  </div>
+
+  <!-- ── Toast notificaciones ──────────────────────────────── -->
+  @if (mensajeExito) {
+  <div class="toast toast-success">
+    <span class="material-symbols-outlined">check_circle</span>
+    {{ mensajeExito }}
+  </div>
+  }
+  @if (mensajeError && !modalMode()) {
+  <div class="toast toast-error">
+    <span class="material-symbols-outlined">error</span>
+    {{ mensajeError }}
+  </div>
+  }
+
+  <!-- ── Barra de filtros ───────────────────────────────────── -->
+  <div class="filter-bar">
+    <div class="search-wrapper">
+      <span class="material-symbols-outlined search-icon">search</span>
+      <input id="filtro-busqueda" type="text" class="search-input" placeholder="Buscar por código o nombre..."
+        [value]="filtroBusqueda()" (input)="onFiltroChange($any($event.target).value)" />
+      @if (filtroBusqueda()) {
+      <button class="clear-btn" (click)="limpiarFiltro()" title="Limpiar búsqueda">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+      }
+    </div>
+    <div class="filter-stats">
+      <span class="badge-count">{{ categoriasFiltradas().length }} resultado(s)</span>
+    </div>
+  </div>
+
+  <!-- ── Tabla ─────────────────────────────────────────────── -->
+  <div class="table-card">
+
+    @if (cargando()) {
+    <div class="table-loader">
+      <span class="spinner-lg"></span>
+      <p>Cargando categorías de materiales...</p>
+    </div>
+    } @else if (categoriasFiltradas().length === 0) {
+    <div class="table-empty">
+      <span class="material-symbols-outlined empty-icon">search_off</span>
+      <p>No se encontraron categorías.</p>
+      @if (filtroBusqueda()) {
+      <button class="btn-ghost" (click)="limpiarFiltro()">Limpiar filtro</button>
+      } @else {
+      <button class="btn-primary" (click)="abrirCrear()">Crear primera categoría</button>
+      }
+    </div>
+    } @else {
+    <div class="table-responsive">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th class="col-index">#</th>
+            <th>Código</th>
+            <th>Nombre Categoría</th>
+            <th class="col-actions" style="text-align: center;">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (cat of categoriasFiltradas(); track cat.id_categoria; let i = $index) {
+          <tr>
+            <td class="col-index text-muted">{{ i + 1 }}</td>
+            <td>
+              <span class="code-badge">{{ cat.cod_cat }}</span>
+            </td>
+            <td>
+              <span class="area-nombre">{{ cat.nombre_categoria }}</span>
+            </td>
+            <td class="col-actions" style="display: flex; justify-content: center; align-items: center;">
+              <div class="actions-group">
+                <button class="btn-icon btn-edit" (click)="abrirEditar(cat)" title="Editar">
+                  <span class="material-symbols-outlined">edit</span>
+                </button>
+              </div>
+            </td>
+          </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    }
+
+  </div>
+
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- Modal Crear / Editar                                    -->
+<!-- ═══════════════════════════════════════════════════════ -->
+@if (modalMode()) {
+<div class="modal-backdrop" (click)="cerrarModal()">
+  <div class="modal-card" (click)="$event.stopPropagation()">
+
+    <div class="modal-header">
+      <div class="modal-title-group">
+        <span class="material-symbols-outlined modal-icon">
+          {{ modalMode() === 'crear' ? 'add_circle' : 'edit' }}
+        </span>
+        <h2 class="modal-title">
+          {{ modalMode() === 'crear' ? 'Nueva Categoría' : 'Editar Categoría' }}
+        </h2>
+      </div>
+      <button class="modal-close" (click)="cerrarModal()">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+
+    <div class="modal-body" style="max-height: 65vh; overflow-y: auto;">
+
+      @if (mensajeError) {
+      <div class="form-error-alert">
+        <span class="material-symbols-outlined">error</span>
+        {{ mensajeError }}
+      </div>
+      }
+
+      <div class="form-group">
+        <label for="form-codigo">Código de Categoría</label>
+        <div class="input-wrapper" [class.input-disabled]="modalMode() === 'editar'">
+          <span class="input-icon material-symbols-outlined">qr_code</span>
+          <input id="form-codigo" type="text" [(ngModel)]="form.cod_cat" name="cod_cat"
+            placeholder="Ej: ALT, BAJ, CON" maxlength="20" [readonly]="modalMode() === 'editar'" style="text-transform: uppercase;" />
+        </div>
+        @if (modalMode() === 'editar') {
+          <span class="field-hint">El código de categoría no se puede modificar una vez registrado.</span>
+        } @else {
+          <span class="field-hint">Código único alfanumérico sin espacios (Ej: ROT, CONSUM). Máx. 20 caracteres.</span>
+        }
+      </div>
+
+      <div class="form-group">
+        <label for="form-nombre">Nombre de Categoría</label>
+        <div class="input-wrapper">
+          <span class="input-icon material-symbols-outlined">label</span>
+          <input id="form-nombre" type="text" [(ngModel)]="form.nombre_categoria" name="nombre_categoria"
+            placeholder="Ej: Alta Rotación" maxlength="150" />
+        </div>
+        <span class="field-hint">Nombre descriptivo de la categoría. Máx. 150 caracteres.</span>
+      </div>
+
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn-ghost" (click)="cerrarModal()" [disabled]="guardando()">
+        Cancelar
+      </button>
+      <button class="btn-primary" (click)="guardar()" [disabled]="guardando()">
+        @if (guardando()) {
+        <span class="spinner-sm spinner-white"></span>
+        Guardando...
+        } @else {
+        <span class="material-symbols-outlined">save</span>
+        {{ modalMode() === 'crear' ? 'Crear Categoría' : 'Guardar Cambios' }}
+        }
+      </button>
+    </div>
+
+  </div>
+</div>
+}

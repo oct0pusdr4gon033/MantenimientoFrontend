@@ -1,0 +1,520 @@
+<div class="page-wrapper">
+
+  <!-- ── Encabezado de página ──────────────────────────────── -->
+  <div class="page-header">
+    <div class="page-title-group">
+      <button class="btn-back" (click)="regresar()" title="Regresar a la lista">
+        <span class="material-symbols-outlined">arrow_back</span>
+      </button>
+      <div>
+        <h1 class="page-title">
+          {{ isEditMode ? 'Editar Plan de Mantenimiento (Hoja de Ruta)' : 'Nuevo Plan de Mantenimiento (Hoja de Ruta)' }}
+        </h1>
+        <p class="page-subtitle">
+          {{ isEditMode ? 'Modificando los parámetros del plan #' + idPlan : 'Registre un nuevo plan de mantenimiento preventivo cargando su hoja de ruta' }}
+        </p>
+      </div>
+    </div>
+  </div>
+
+  @if (cargando()) {
+  <div class="form-loader-container">
+    <span class="spinner-lg"></span>
+    <p>Cargando información del plan de mantenimiento...</p>
+  </div>
+  } @else {
+
+  <!-- ── Toasts de notificación ───────────────────────────── -->
+  @if (mensajeExito()) {
+  <div class="toast toast-success">
+    <span class="material-symbols-outlined">check_circle</span>
+    {{ mensajeExito() }}
+  </div>
+  }
+  @if (mensajeError()) {
+  <div class="toast toast-error">
+    <span class="material-symbols-outlined">error</span>
+    {{ mensajeError() }}
+  </div>
+  }
+
+  <!-- ── Formulario Principal (Grid) ────────────────────────── -->
+  <div class="form-grid">
+
+    <!-- ── CARD 1: INFORMACIÓN GENERAL ──────────────────────── -->
+    <div class="form-card general-info-card">
+      <div class="card-header">
+        <span class="material-symbols-outlined card-header-icon">info</span>
+        <h2 class="card-title">Información General</h2>
+      </div>
+
+      <div class="card-body">
+        
+        <div class="form-group">
+          <label for="form-estrategia">Estrategia de Mantenimiento</label>
+          <div class="input-wrapper" [class.input-disabled]="isEditMode">
+            <span class="input-icon material-symbols-outlined">assignment</span>
+            <select id="form-estrategia" [(ngModel)]="selectedEstrategiaId" (change)="onEstrategiaChange()" [disabled]="isEditMode">
+              <option value="0" disabled selected>-- Seleccione una Estrategia --</option>
+              @for (est of estrategias(); track est.id_estrategia) {
+              <option [value]="est.id_estrategia">{{ est.cod_estrategia }} - {{ est.titulo_estrategia }}</option>
+              }
+            </select>
+          </div>
+          @if (isEditMode) {
+          <span class="field-hint">La estrategia asociada no puede cambiarse.</span>
+          }
+        </div>
+
+        <div class="form-row-2col">
+          <div class="form-group">
+            <label for="form-fecha">Fecha de Registro</label>
+            <div class="input-wrapper input-disabled">
+              <span class="input-icon material-symbols-outlined">calendar_today</span>
+              <input id="form-fecha" type="datetime-local" [(ngModel)]="fecha_creacion" readonly />
+            </div>
+          </div>
+
+          <div class="form-group flex-center-y">
+            <label class="toggle-label">
+              <span>Estado del Plan</span>
+              <div class="toggle-switch">
+                <input type="checkbox" [(ngModel)]="estado" id="form-estado-switch" />
+                <span class="toggle-slider"></span>
+              </div>
+              <span class="toggle-text">{{ estado ? 'Activo' : 'Inactivo' }}</span>
+            </label>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ── CARD 2: ACTIVIDADES PLANIFICADAS (HOJA DE RUTA) ───── -->
+    <div class="form-card full-width-card">
+      <div class="card-header space-between-header">
+        <div class="title-group-left">
+          <span class="material-symbols-outlined card-header-icon font-blue">build</span>
+          <h2 class="card-title">Hoja de Ruta y Actividades</h2>
+        </div>
+        
+        <div class="actions-group-right">
+          <label class="btn-excel-upload" [class.disabled]="selectedEstrategiaId === 0">
+            <span class="material-symbols-outlined">upload_file</span>
+            Cargar Hoja de Ruta (Excel)
+            <input type="file" (change)="onExcelUpload($event)" accept=".xlsx, .xls" [disabled]="selectedEstrategiaId === 0" style="display: none;" />
+          </label>
+
+          <button class="btn-ghost btn-sm-action" (click)="abrirActividadModal()" [disabled]="selectedEstrategiaId === 0">
+            <span class="material-symbols-outlined">add_circle</span>
+            Asignar Actividades
+          </button>
+        </div>
+      </div>
+
+      <!-- Alerta informativa Excel format -->
+      <div class="alert-info-box" style="margin: 1rem 1.4rem 0 1.4rem;">
+        <span class="material-symbols-outlined info-box-icon">info</span>
+        <div class="info-box-text">
+          <strong>Carga desde Excel:</strong> El archivo debe contener las columnas: <code>TIPO PM</code> | <code>ACTIVIDAD</code> | <code>COD-SISTEMA</code> | <code>MATERIAL</code> | <code>CANTIDAD</code>. Las actividades que no existan se crearán en la base de datos automáticamente al guardar.
+        </div>
+      </div>
+
+      <div class="card-body padding-none">
+        @if (selectedActividades().length === 0) {
+        <div class="card-empty-state">
+          <span class="material-symbols-outlined empty-state-icon">construction</span>
+          <p>No se han registrado actividades ni hojas de ruta en este plan.</p>
+          @if (selectedEstrategiaId === 0) {
+          <span class="empty-hint">Seleccione primero una estrategia para habilitar la importación o asignación.</span>
+          } @else {
+          <button class="btn-ghost btn-xs" (click)="abrirActividadModal()">Asignar Actividad Manual</button>
+          }
+        </div>
+        } @else {
+        <div class="table-responsive" style="margin-top: 1rem;">
+          <table class="form-data-table">
+            <thead>
+              <tr>
+                <th class="col-index">#</th>
+                <th>Nivel PM</th>
+                <th>Sistema</th>
+                <th>Actividad</th>
+                <th>Material Asignado</th>
+                <th class="text-center" style="width: 100px;">Cant.</th>
+                <th class="col-delete-action">Remover</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (act of selectedActividades(); track i; let i = $index) {
+              <tr>
+                <td class="col-index text-muted">{{ i + 1 }}</td>
+                <td>
+                  <select [value]="act.id_detalle_estrg" (change)="onRowPmChange(i, $any($event.target).value)" class="form-control-sm">
+                    @for (det of detallesFiltrados(); track det.id_detalle_estrg) {
+                    <option [value]="det.id_detalle_estrg">{{ det.tipo_pm }}</option>
+                    }
+                  </select>
+                </td>
+                <td>
+                  <span class="system-badge" [class.badge-system-error]="!sistemaExiste(act.cod_sistema)">
+                    {{ act.cod_sistema }}
+                  </span>
+                  @if (!sistemaExiste(act.cod_sistema)) {
+                  <span class="error-hint" style="display: block; font-size: 0.72rem; margin-top: 2px; font-weight: 600;">No registrado</span>
+                  }
+                </td>
+                <td>
+                  <span class="font-semibold">{{ act.nombre_actividad }}</span>
+                  @if (act.id_actividad === 0) {
+                  <span class="badge-new">Nueva</span>
+                  }
+                </td>
+                <td>
+                  @if (act.id_material) {
+                  <div style="display: flex; align-items: center; gap: 0.5rem;">
+                    <span class="code-badge">{{ act.cod_materia }}</span>
+                    <span style="font-size: 0.82rem; color: var(--text-color);">{{ act.descripcion_material }}</span>
+                    <button class="btn-icon" style="background: none; color: #ef4444; width: auto; height: auto; padding: 2px;" (click)="quitarMaterialDeActividad(i)" title="Quitar Material">
+                      <span class="material-symbols-outlined" style="font-size: 1rem;">delete</span>
+                    </button>
+                  </div>
+                  } @else if (act.cod_materia) {
+                  <div style="display: flex; align-items: center; gap: 0.5rem;">
+                    <span class="badge-warning">No encontrado: {{ act.cod_materia }}</span>
+                    <button class="btn-ghost btn-xs" (click)="abrirMaterialModal(i)">Resolver</button>
+                  </div>
+                  } @else {
+                  <button class="btn-ghost btn-xs" (click)="abrirMaterialModal(i)">
+                    <span class="material-symbols-outlined" style="font-size: 0.85rem; margin-right: 2px;">add</span> Asignar
+                  </button>
+                  }
+                </td>
+                <td class="text-center">
+                  @if (act.id_material || act.cod_materia) {
+                  <input type="number" [(ngModel)]="act.cantidad" min="1" class="form-control-sm col-qty-input" />
+                  } @else {
+                  <span class="text-muted">-</span>
+                  }
+                </td>
+                <td class="col-delete-action">
+                  <button class="btn-icon btn-delete" (click)="removerActividad(i)" title="Remover Línea">
+                    <span class="material-symbols-outlined">remove_circle</span>
+                  </button>
+                </td>
+              </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+        }
+      </div>
+    </div>
+
+    <!-- ── CARD 3: PERSONAL REQUERIDO ──────────────────────── -->
+    <div class="form-card full-width-card">
+      <div class="card-header">
+        <span class="material-symbols-outlined card-header-icon font-purple">groups</span>
+        <h2 class="card-title">Personal Requerido</h2>
+      </div>
+
+      <div class="card-body">
+        
+        <!-- Entrada inline para agregar personal usando Combobox -->
+        <div class="personal-inline-adder">
+          <div class="form-group flex-1">
+            <label for="form-rol">Rol / Puesto Técnico</label>
+            <div class="input-wrapper">
+              <span class="input-icon material-symbols-outlined">engineering</span>
+              <select id="form-rol" [(ngModel)]="rolSeleccionadoId">
+                <option value="0" disabled selected>-- Seleccione un Rol --</option>
+                @for (r of roles(); track r.id_rol) {
+                <option [value]="r.id_rol">{{ r.nombre_rol }} ({{ r.prefijo }})</option>
+                }
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group col-qty">
+            <label for="form-rol-qty">Cantidad</label>
+            <div class="input-wrapper">
+              <span class="input-icon material-symbols-outlined">tag</span>
+              <input id="form-rol-qty" type="number" min="1" [(ngModel)]="cantidadPersonal" />
+            </div>
+          </div>
+
+          <button class="btn-primary btn-add-inline" (click)="agregarPersonal()">
+            <span class="material-symbols-outlined">person_add</span>
+            Agregar
+          </button>
+        </div>
+
+        <div class="personal-list-container">
+          @if (selectedPersonales().length === 0) {
+          <div class="card-empty-state-compact">
+            <p>No se ha especificado personal técnico.</p>
+          </div>
+          } @else {
+          <div class="table-responsive">
+            <table class="form-data-table compact-table">
+              <thead>
+                <tr>
+                  <th class="col-index">#</th>
+                  <th>Rol Requerido</th>
+                  <th class="text-center">Personal</th>
+                  <th class="col-delete-action">Remover</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (per of selectedPersonales(); track per.id_rol; let i = $index) {
+                <tr>
+                  <td class="col-index text-muted">{{ i + 1 }}</td>
+                  <td class="font-semibold">{{ per.nombre_rol }}</td>
+                  <td class="text-center font-bold font-purple">{{ per.cantidad }} pers.</td>
+                  <td class="col-delete-action">
+                    <button class="btn-icon btn-delete" (click)="removerPersonal(i)" title="Remover Rol">
+                      <span class="material-symbols-outlined">remove_circle</span>
+                    </button>
+                  </td>
+                </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+          }
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Acciones del Formulario al final -->
+  <div class="form-footer-actions">
+    <button class="btn-ghost btn-cancel-large" (click)="regresar()" [disabled]="guardando()">
+      <span class="material-symbols-outlined font-muted">cancel</span>
+      Cancelar Registro
+    </button>
+    <button class="btn-primary btn-save-large" (click)="guardar()" [disabled]="guardando() || cargando()">
+      @if (guardando()) {
+      <span class="spinner-sm spinner-white"></span>
+      Guardando Hoja de Ruta...
+      } @else {
+      <span class="material-symbols-outlined">save</span>
+      Guardar Hoja de Ruta
+      }
+    </button>
+  </div>
+  }
+
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- Modal 1: Selección de Actividades Filtradas por Sistema  -->
+<!-- ═══════════════════════════════════════════════════════ -->
+@if (showActividadModal()) {
+<div class="modal-backdrop" (click)="cerrarActividadModal()">
+  <div class="modal-card modal-lg" (click)="$event.stopPropagation()">
+
+    <div class="modal-header">
+      <div class="modal-title-group">
+        <span class="material-symbols-outlined modal-icon font-blue">build_circle</span>
+        <h2 class="modal-title">Asignar Actividades del Sistema</h2>
+      </div>
+      <button class="modal-close" (click)="cerrarActividadModal()">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+
+    <div class="modal-body modal-split-body">
+      
+      <!-- Paso 1: Seleccionar PM y Sistema -->
+      <div class="modal-step-section system-select-side">
+        
+        <label class="section-step-label">1. Seleccione Nivel PM</label>
+        <div class="input-wrapper" style="margin-bottom: 1.25rem;">
+          <span class="input-icon material-symbols-outlined">speed</span>
+          <select [ngModel]="modalTipoPmId()" (ngModelChange)="modalTipoPmId.set($any($event))">
+            @for (det of detallesFiltrados(); track det.id_detalle_estrg) {
+            <option [value]="det.id_detalle_estrg">{{ det.tipo_pm }}</option>
+            }
+          </select>
+        </div>
+
+        <label class="section-step-label">2. Seleccione el Sistema</label>
+        <div class="input-wrapper">
+          <span class="input-icon material-symbols-outlined">settings_applications</span>
+          <select [ngModel]="sistemaSeleccionadoId()" (ngModelChange)="sistemaSeleccionadoId.set($any($event)); onSistemaChange()">
+            <option value="0" selected>-- Seleccione un Sistema --</option>
+            @for (s of sistemas(); track s.id_sistema) {
+            <option [value]="s.id_sistema">{{ s.cod_sist }} - {{ s.nombre_sist }}</option>
+            }
+          </select>
+        </div>
+
+        <div class="sistemas-quick-list" style="margin-top: 1rem;">
+          @for (s of sistemas(); track s.id_sistema) {
+          <div class="system-item-card" 
+            [class.system-item-selected]="s.id_sistema === sistemaSeleccionadoId()"
+            (click)="sistemaSeleccionadoId.set(s.id_sistema); onSistemaChange()">
+            <span class="system-item-code">{{ s.cod_sist }}</span>
+            <span class="system-item-name">{{ s.nombre_sist }}</span>
+          </div>
+          }
+        </div>
+      </div>
+
+      <!-- Paso 2: Seleccionar Actividades -->
+      <div class="modal-step-section activities-select-side">
+        <label class="section-step-label">
+          3. Seleccione las Actividades a Realizar
+          @if (sistemaSeleccionadoId() > 0) {
+          <span class="badge-count">{{ actividadesDeSistema().length }} encontradas</span>
+          }
+        </label>
+
+        @if (sistemaSeleccionadoId() === 0) {
+        <div class="step-placeholder">
+          <span class="material-symbols-outlined placeholder-icon">arrow_back</span>
+          <p>Seleccione un sistema a la izquierda para ver sus actividades disponibles.</p>
+        </div>
+        } @else if (actividadesDeSistema().length === 0) {
+        <div class="step-placeholder">
+          <span class="material-symbols-outlined placeholder-icon">search_off</span>
+          <p>No se encontraron actividades registradas para este sistema.</p>
+        </div>
+        } @else {
+        <div class="activities-checkbox-list">
+          @for (act of actividadesDeSistema(); track act.id_actividad) {
+          <label class="activity-checkbox-item" [class.activity-checked]="actividadesChequeadas().has(act.id_actividad)">
+            <input type="checkbox" 
+              [checked]="actividadesChequeadas().has(act.id_actividad)" 
+              (change)="toggleActividadCheck(act.id_actividad)" />
+            <div class="activity-item-details">
+              <span class="activity-item-title">{{ act.nombre_actividad }}</span>
+              <span class="activity-item-desc">{{ act.descripcion }}</span>
+              <span class="activity-item-duration" style="font-size:0.75rem; color:#f97316; margin-top:2px;">
+                Frecuencia Estimada: {{ act.duracion }} {{ act.medida_duracion }}
+              </span>
+            </div>
+          </label>
+          }
+        </div>
+        }
+      </div>
+
+    </div>
+
+    <div class="modal-footer">
+      <div class="selected-count-footer">
+        <strong>{{ actividadesChequeadas().size }}</strong> actividades seleccionadas en total.
+      </div>
+      <div>
+        <button class="btn-ghost" (click)="cerrarActividadModal()">
+          Cancelar
+        </button>
+        <button class="btn-primary" (click)="confirmarActividades()">
+          <span class="material-symbols-outlined">check</span>
+          Confirmar y Añadir
+        </button>
+      </div>
+    </div>
+
+  </div>
+</div>
+}
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- Modal 2: Selección de Materiales desde Almacén           -->
+<!-- ═══════════════════════════════════════════════════════ -->
+@if (showMaterialModal()) {
+<div class="modal-backdrop" (click)="cerrarMaterialModal()">
+  <div class="modal-card modal-md" (click)="$event.stopPropagation()">
+
+    <div class="modal-header">
+      <div class="modal-title-group">
+        <span class="material-symbols-outlined modal-icon font-green">inventory</span>
+        <h2 class="modal-title">Asignar Material</h2>
+      </div>
+      <button class="modal-close" (click)="cerrarMaterialModal()">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+
+    <div class="modal-body">
+      
+      <!-- Buscador de material en el modal -->
+      <div class="search-wrapper">
+        <input type="text" class="form-control-sm" style="width: 100%; height: 38px; border: 1.5px solid #e5e7eb; border-radius: 8px; padding-left: 10px;"
+          placeholder="Buscar por código de material o nombre..."
+          [ngModel]="filtroMaterialBusqueda()"
+          (ngModelChange)="filtroMaterialBusqueda.set($event)" />
+      </div>
+
+      <!-- Tabla de materiales -->
+      <div class="modal-table-container">
+        <table class="modal-data-table">
+          <thead>
+            <tr>
+              <th>Código</th>
+              <th>Descripción</th>
+              <th class="text-center">Stock</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (m of materialesFiltrados(); track m.id_material) {
+            <tr [class.row-selected]="materialSeleccionado?.id_material === m.id_material"
+              (click)="seleccionarMaterial(m)">
+              <td><span class="code-badge">{{ m.cod_materia }}</span></td>
+              <td class="font-semibold">{{ m.descripcion }}</td>
+              <td class="text-center text-muted">{{ m.stock }} {{ m.nombre_unidad }}</td>
+            </tr>
+            }
+            @if (materialesFiltrados().length === 0) {
+            <tr>
+              <td colspan="3" class="text-center text-muted" style="padding: 2rem;">
+                No se encontraron materiales con ese criterio.
+              </td>
+            </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Selección y cantidad -->
+      @if (materialSeleccionado) {
+      <div class="selected-material-box animation-fade-in" style="margin-top: 1rem;">
+        <div class="selected-material-details">
+          <span class="selected-title">Material Seleccionado:</span>
+          <span class="selected-name">
+            <strong>{{ materialSeleccionado.cod_materia }}</strong> - {{ materialSeleccionado.descripcion }}
+          </span>
+          <span class="selected-stock">
+            Stock Actual: {{ materialSeleccionado.stock }} {{ materialSeleccionado.nombre_unidad }}
+          </span>
+        </div>
+
+        <div class="form-group qty-group">
+          <label for="form-mat-qty">Cantidad a Reservar</label>
+          <div class="input-wrapper">
+            <input id="form-mat-qty" type="number" min="1" [(ngModel)]="cantidadMaterial" />
+          </div>
+        </div>
+      </div>
+      }
+
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn-ghost" (click)="cerrarMaterialModal()">
+        Cancelar
+      </button>
+      <button class="btn-primary" (click)="agregarMaterialConfirmado()" [disabled]="!materialSeleccionado">
+        <span class="material-symbols-outlined">playlist_add</span>
+        Añadir al Plan
+      </button>
+    </div>
+
+  </div>
+</div>
+}

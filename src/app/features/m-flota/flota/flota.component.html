@@ -1,0 +1,221 @@
+<div class="page-wrapper">
+
+  <!-- ── Header ─────────────────────────────────────────────── -->
+  <div class="page-header">
+    <div class="page-title-group">
+      <span class="material-symbols-outlined page-icon">local_shipping</span>
+      <div>
+        <h1 class="page-title">Flotas</h1>
+        <p class="page-subtitle">Gestión y administración de flotas de equipos</p>
+      </div>
+    </div>
+    <button class="btn-primary" (click)="abrirCrear()">
+      <span class="material-symbols-outlined">add</span>
+      Nueva Flota
+    </button>
+  </div>
+
+  <!-- ── Toasts ─────────────────────────────────────────────── -->
+  @if (mensajeExito) {
+  <div class="toast toast-success">
+    <span class="material-symbols-outlined">check_circle</span>
+    {{ mensajeExito }}
+  </div>
+  }
+  @if (mensajeError && !modalMode()) {
+  <div class="toast toast-error">
+    <span class="material-symbols-outlined">error</span>
+    {{ mensajeError }}
+  </div>
+  }
+
+  <!-- ── Barra de filtros ───────────────────────────────────── -->
+  <div class="filter-bar">
+    <div class="search-wrapper">
+      <span class="material-symbols-outlined search-icon">search</span>
+      <input id="filtro-busqueda" type="text" class="search-input"
+        placeholder="Buscar por código, nombre, modelo, marca o tipo..."
+        [value]="filtroBusqueda()" (input)="onFiltroChange($any($event.target).value)" />
+      @if (filtroBusqueda()) {
+      <button class="clear-btn" (click)="limpiarFiltro()" title="Limpiar búsqueda">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+      }
+    </div>
+    <div class="filter-stats">
+      <span class="badge-count">{{ flotasFiltradas().length }} resultado(s)</span>
+    </div>
+  </div>
+
+  <!-- ── Tabla ──────────────────────────────────────────────── -->
+  <div class="table-card">
+
+    @if (cargando()) {
+    <div class="table-loader">
+      <span class="spinner-lg"></span>
+      <p>Cargando flotas...</p>
+    </div>
+    } @else if (flotasFiltradas().length === 0) {
+    <div class="table-empty">
+      <span class="material-symbols-outlined empty-icon">search_off</span>
+      <p>No se encontraron flotas registradas.</p>
+      @if (filtroBusqueda()) {
+      <button class="btn-ghost" (click)="limpiarFiltro()">Limpiar filtro</button>
+      } @else {
+      <button class="btn-primary" (click)="abrirCrear()">Crear primera flota</button>
+      }
+    </div>
+    } @else {
+    <div class="table-responsive">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th class="col-index">#</th>
+            <th>Código</th>
+            <th>Nombre de Flota</th>
+            <th>Modelo / Marca</th>
+            <th>Tipo</th>
+            <th>Control</th>
+            <th class="col-actions">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (flota of flotasFiltradas(); track flota.idFlota; let i = $index) {
+          <tr>
+            <td class="col-index text-muted">{{ i + 1 }}</td>
+            <td>
+              <span class="code-badge">{{ flota.codFlota }}</span>
+            </td>
+            <td class="area-nombre">{{ flota.nombreFlota }}</td>
+            <td>
+              <div class="cell-stacked">
+                <span class="cell-main">{{ flota.nombreModelo }}</span>
+                <span class="cell-sub">{{ flota.nombreMarca }}</span>
+              </div>
+            </td>
+            <td class="text-muted-sm">{{ flota.nombreTipo }}</td>
+            <td class="text-muted-sm">{{ flota.tipoControl || '—' }}</td>
+            <td class="col-actions">
+              <div class="actions-group">
+                <button class="btn-icon btn-detail" (click)="verDetalle(flota)" title="Ver detalle con equipos">
+                  <span class="material-symbols-outlined">info</span>
+                </button>
+                <button class="btn-icon btn-edit" (click)="abrirEditar(flota)" title="Editar">
+                  <span class="material-symbols-outlined">edit</span>
+                </button>
+              </div>
+            </td>
+          </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    }
+
+  </div>
+
+
+
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- Modal Crear / Editar                                    -->
+<!-- ═══════════════════════════════════════════════════════ -->
+@if (modalMode()) {
+<div class="modal-backdrop" (click)="cerrarModal()">
+  <div class="modal-card modal-lg" (click)="$event.stopPropagation()">
+
+    <div class="modal-header">
+      <div class="modal-title-group">
+        <span class="material-symbols-outlined modal-icon">
+          {{ modalMode() === 'crear' ? 'add_circle' : 'edit' }}
+        </span>
+        <h2 class="modal-title">
+          {{ modalMode() === 'crear' ? 'Nueva Flota' : 'Editar Flota' }}
+        </h2>
+      </div>
+      <button class="modal-close" (click)="cerrarModal()">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+
+    <div class="modal-body">
+
+      @if (mensajeError) {
+      <div class="form-error-alert">
+        <span class="material-symbols-outlined">error</span>
+        {{ mensajeError }}
+      </div>
+      }
+
+      <!-- Código y Nombre -->
+      <div class="form-row">
+        <div class="form-group">
+          <label for="form-cod">Código de Flota *</label>
+          <div class="input-wrapper" [class.input-disabled]="modalMode() === 'editar'">
+            <span class="input-icon material-symbols-outlined">tag</span>
+            <input id="form-cod" type="text" [(ngModel)]="form.codFlota" name="codFlota"
+              placeholder="Ej: FL-001" [readonly]="modalMode() === 'editar'" />
+          </div>
+          @if (modalMode() === 'editar') {
+          <span class="field-hint">El código no puede modificarse.</span>
+          }
+        </div>
+
+        <div class="form-group">
+          <label for="form-nombre">Nombre de Flota *</label>
+          <div class="input-wrapper">
+            <span class="input-icon material-symbols-outlined">local_shipping</span>
+            <input id="form-nombre" type="text" [(ngModel)]="form.nombreFlota" name="nombreFlota"
+              placeholder="Ej: Flota Norte" />
+          </div>
+        </div>
+      </div>
+
+      <!-- Modelo y Tipo de Control -->
+      <div class="form-row">
+        <div class="form-group">
+          <label for="form-modelo">Modelo de Equipo *</label>
+          <div class="input-wrapper select-wrapper">
+            <span class="input-icon material-symbols-outlined">precision_manufacturing</span>
+            <select id="form-modelo" [(ngModel)]="form.idModelo" name="idModelo">
+              <option [ngValue]="0" disabled>-- Seleccione un modelo --</option>
+              @for (modelo of modelos(); track modelo.idModelo) {
+              <option [ngValue]="modelo.idModelo">
+                {{ modelo.nombreModelo }} ({{ modelo.nombreMarca }})
+              </option>
+              }
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="form-control">Tipo de Control</label>
+          <div class="input-wrapper">
+            <span class="input-icon material-symbols-outlined">tune</span>
+            <input id="form-control" type="text" [(ngModel)]="form.tipoControl" name="tipoControl"
+              placeholder="Ej: Horómetro, Odómetro" />
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn-ghost" (click)="cerrarModal()" [disabled]="guardando()">
+        Cancelar
+      </button>
+      <button class="btn-primary" (click)="guardar()" [disabled]="guardando()">
+        @if (guardando()) {
+        <span class="spinner-sm spinner-white"></span>
+        Guardando...
+        } @else {
+        <span class="material-symbols-outlined">save</span>
+        {{ modalMode() === 'crear' ? 'Crear Flota' : 'Guardar Cambios' }}
+        }
+      </button>
+    </div>
+
+  </div>
+</div>
+}

@@ -1,0 +1,165 @@
+<div class="page-wrapper">
+  
+  <!-- Header -->
+  <div class="page-header">
+    <div class="page-title-group">
+      <span class="material-symbols-outlined page-icon">assignment</span>
+      <div>
+        <h1 class="page-title">Estrategias de Mantenimiento</h1>
+        <p class="page-subtitle">Gestione las estrategias para flotas y equipos</p>
+      </div>
+    </div>
+    <button routerLink="/GestionMantenimiento/estrategia/crear" class="btn-primary">
+      <span class="material-symbols-outlined">add</span>
+      Nueva Estrategia
+    </button>
+  </div>
+
+  <!-- Filters -->
+  <div class="filter-bar" style="display: flex; justify-content: space-between; align-items: center;">
+    <div style="display: flex; gap: 1rem; flex: 1;">
+      <div class="search-wrapper" style="max-width: 400px; flex: 1;">
+        <span class="material-symbols-outlined search-icon">search</span>
+        <input type="text" class="search-input" [ngModel]="filtroBusqueda()" (ngModelChange)="onFiltroChange($event)" placeholder="Buscar por código, PM, equipo o flota...">
+      </div>
+      <div class="select-wrapper" style="max-width: 200px; border: 1.5px solid #e5e7eb; border-radius: 8px; background: #f9fafb;">
+        <select [ngModel]="estadoFiltro()" (change)="onEstadoFiltroChange($event)" style="width: 100%; border: none; background: transparent; padding: 0.65rem 0.75rem; font-size: 0.875rem; color: #374151; outline: none; cursor: pointer;">
+          <option value="TODOS">Todos los Estados</option>
+          <option value="ACTIVO">Activos</option>
+          <option value="INACTIVO">Inactivos</option>
+        </select>
+      </div>
+    </div>
+    <div class="text-muted-sm" style="font-weight: 500; font-size: 0.85rem;">
+      {{ estrategiasFiltradas().length }} resultado(s)
+    </div>
+  </div>
+
+  <!-- Table -->
+  <div class="table-card">
+    @if (estrategias().length === 0 && !filtroBusqueda()) {
+      <div class="table-empty">
+        <span class="material-symbols-outlined empty-icon">assignment</span>
+        <p>No hay estrategias registradas.</p>
+        <button class="btn-primary" routerLink="/GestionMantenimiento/estrategia/crear">Crear primera estrategia</button>
+      </div>
+    } @else {
+      <div class="table-responsive">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th class="col-index">#</th>
+              <th>Código</th>
+              <th>Título</th>
+              <th>Asignación</th>
+              <th>Estado</th>
+              <th class="col-actions text-center">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (est of estrategiasFiltradas(); track est.id_estrategia; let i = $index) {
+              <tr>
+                <td class="col-index text-muted">{{ i + 1 }}</td>
+                <td>
+                  <span class="code-badge">{{ est.cod_estrategia }}</span>
+                </td>
+                <td class="area-nombre">{{ est.titulo_estrategia }}</td>
+                <td>
+                  @if (est.id_flota) {
+                    <div class="cell-stacked">
+                      <span class="code-badge-sm" style="margin-bottom: 2px; display: inline-block;">Flota</span>
+                      <span class="text-muted-sm" style="font-size: 0.75rem;">{{ est.cod_flota || est.nombre_flota || '' }}</span>
+                    </div>
+                  } @else if (est.id_equipo) {
+                    <div class="cell-stacked">
+                      <span class="code-badge-sm" style="color: #3b82f6; background: rgba(59, 130, 246, 0.1); border-color: rgba(59, 130, 246, 0.2); margin-bottom: 2px; display: inline-block;">Equipo</span>
+                      <span class="text-muted-sm" style="font-size: 0.75rem;">{{ est.cod_equipo || '' }}</span>
+                    </div>
+                  } @else {
+                    <span class="text-muted-sm">Sin Asignar</span>
+                  }
+                </td>
+                <td>
+                  <span class="estado-badge" [ngClass]="est.estado === 'ACTIVO' ? 'badge-operativo' : 'badge-inactivo'">
+                    {{ est.estado }}
+                  </span>
+                </td>
+                <td class="col-actions">
+                  <div class="actions-group">
+                    <button class="btn-icon btn-detail" title="Ver Detalles" [routerLink]="['/GestionMantenimiento/estrategia/detalle', est.id_estrategia]">
+                      <span class="material-symbols-outlined">visibility</span>
+                    </button>
+                    <button class="btn-icon" title="Editar" (click)="abrirModalEditar(est)" style="color: #e86b1a; background: rgba(232, 107, 26, 0.08);">
+                      <span class="material-symbols-outlined">edit</span>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="6">
+                  <div class="table-empty" style="padding: 3rem 0;">
+                    <span class="material-symbols-outlined empty-icon">search_off</span>
+                    <p style="margin-top: 1rem; color: #6b7280;">No se encontraron resultados para su búsqueda.</p>
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </div>
+
+</div>
+
+<!-- MODAL EDITAR ESTRATEGIA -->
+@if (showEditModal) {
+  <div class="modal-overlay" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(4px);">
+    <div class="modal-container" style="background: white; border-radius: 12px; width: 90%; max-width: 500px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04); overflow: hidden;">
+      
+      <div class="modal-header" style="display: flex; align-items: center; justify-content: space-between; padding: 1.25rem 1.5rem; border-bottom: 1px solid #f3f4f6;">
+        <div style="display: flex; align-items: center; gap: 0.65rem;">
+          <span class="material-symbols-outlined" style="font-size: 1.4rem; color: #e86b1a;">edit_document</span>
+          <h3 style="font-size: 1rem; font-weight: 700; color: #1a1a2e; margin: 0;">Editar Estrategia</h3>
+        </div>
+        <button (click)="cerrarModalEditar()" style="background: none; border: none; cursor: pointer; color: #9ca3af; display: flex; align-items: center; padding: 0.25rem; border-radius: 6px; transition: color 0.15s, background 0.15s;">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+
+      <div class="modal-body" style="padding: 1.5rem;">
+        <form [formGroup]="editForm" style="display: flex; flex-direction: column; gap: 1.1rem;">
+          <div style="display: flex; flex-direction: column; gap: 0.4rem;">
+            <label style="font-size: 0.82rem; font-weight: 600; color: #374151;">T�tulo de la Estrategia *</label>
+            <div style="display: flex; align-items: center; border: 1.5px solid #e5e7eb; border-radius: 8px; background: #f9fafb;">
+              <span class="material-symbols-outlined" style="padding: 0 0.6rem 0 0.85rem; font-size: 1rem; color: #9ca3af;">title</span>
+              <input type="text" formControlName="titulo_estrategia" style="flex: 1; border: none; background: transparent; padding: 0.65rem 0.75rem 0.65rem 0.25rem; font-size: 0.875rem; color: #1f2937; outline: none;">
+            </div>
+          </div>
+          
+          <div style="display: flex; flex-direction: column; gap: 0.4rem;">
+            <label style="font-size: 0.82rem; font-weight: 600; color: #374151;">Estado *</label>
+            <div style="display: flex; align-items: center; border: 1.5px solid #e5e7eb; border-radius: 8px; background: #f9fafb;">
+              <span class="material-symbols-outlined" style="padding: 0 0.6rem 0 0.85rem; font-size: 1rem; color: #9ca3af;">toggle_on</span>
+              <select formControlName="estado" style="flex: 1; border: none; background: transparent; padding: 0.65rem 0.75rem 0.65rem 0.25rem; font-size: 0.875rem; color: #1f2937; outline: none; cursor: pointer; appearance: none;">
+                <option value="ACTIVO">ACTIVO</option>
+                <option value="INACTIVO">INACTIVO</option>
+              </select>
+            </div>
+          </div>
+        </form>
+      </div>
+
+      <div class="modal-footer" style="display: flex; justify-content: flex-end; gap: 0.75rem; padding: 1rem 1.5rem; border-top: 1px solid #f3f4f6; background: #fafafa;">
+        <button class="btn-secondary" (click)="cerrarModalEditar()" style="padding: 0.5rem 1rem; border-radius: 8px; font-weight: 500; font-size: 0.875rem; background: #fff; border: 1px solid #d1d5db; color: #374151; cursor: pointer;">
+          Cancelar
+        </button>
+        <button class="btn-primary" [disabled]="editForm.invalid" (click)="guardarEdicion()" style="padding: 0.5rem 1rem; border-radius: 8px; font-weight: 500; font-size: 0.875rem; background: #e86b1a; border: 1px solid #e86b1a; color: #fff; cursor: pointer;">
+          Guardar Cambios
+        </button>
+      </div>
+
+    </div>
+  </div>
+}
