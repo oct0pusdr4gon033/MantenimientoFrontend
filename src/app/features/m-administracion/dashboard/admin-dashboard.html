@@ -1,0 +1,353 @@
+<div class="dashboard-wrapper">
+
+  <!-- ── Estado de carga / error ───────────────────────────── -->
+  @if (cargando()) {
+    <div class="loading-state">
+      <div class="spinner-ring"></div>
+      <p>Cargando panel de control…</p>
+    </div>
+  } @else if (error()) {
+    <div class="error-state">
+      <span class="material-symbols-outlined error-icon">cloud_off</span>
+      <p>{{ error() }}</p>
+      <button class="btn-retry" (click)="cargarDatos()">
+        <span class="material-symbols-outlined">refresh</span> Reintentar
+      </button>
+    </div>
+  } @else {
+
+    <!-- ── Encabezado ─────────────────────────────────────── -->
+    <div class="dash-header">
+      <div class="dash-header-left">
+        <div class="dash-icon-wrap">
+          <span class="material-symbols-outlined">admin_panel_settings</span>
+        </div>
+        <div>
+          <h1 class="dash-title">Panel de Control · Administración</h1>
+          <p class="dash-subtitle">Bienvenido, <strong>{{ nombreUsuario() }}</strong> · Gestión de Personal y Roles</p>
+        </div>
+      </div>
+      <div class="dash-header-right">
+        <button class="btn-refresh" (click)="cargarDatos()" title="Actualizar datos">
+          <span class="material-symbols-outlined">refresh</span>
+        </button>
+        <button class="btn-primary-sm" (click)="irA('/GestionAdministracion/empleado')">
+          <span class="material-symbols-outlined">person_add</span>
+          Nuevo Empleado
+        </button>
+        <button class="btn-accent-sm" (click)="irA('/GestionAdministracion/expedientes-empleados')">
+          <span class="material-symbols-outlined">folder_open</span>
+          Expedientes
+        </button>
+      </div>
+    </div>
+
+    <!-- ── Barra de personal activo ──────────────────────────── -->
+    <div class="availability-bar-card">
+      <div class="avail-info">
+        <span class="material-symbols-outlined avail-icon">groups</span>
+        <div>
+          <span class="avail-label">Personal Activo</span>
+          <span class="avail-pct">{{ porcentajeActivos() }}%</span>
+        </div>
+      </div>
+      <div class="avail-bar-wrap">
+        <div class="avail-bar" [style.width.%]="porcentajeActivos()"></div>
+      </div>
+      <div class="avail-detail">
+        <span class="avail-chip chip-activo">
+          <span class="material-symbols-outlined">check_circle</span>
+          {{ empleadosActivos() }} Activos
+        </span>
+        <span class="avail-chip chip-inactivo">
+          <span class="material-symbols-outlined">cancel</span>
+          {{ empleadosInactivos() }} Inactivos
+        </span>
+        <span class="avail-chip chip-roles">
+          <span class="material-symbols-outlined">badge</span>
+          {{ totalRoles() }} Roles
+        </span>
+      </div>
+    </div>
+
+    <!-- ── KPI Cards ──────────────────────────────────────── -->
+    <div class="kpi-grid">
+
+      <div class="kpi-card kpi-sky" (click)="irA('/GestionAdministracion/empleado')">
+        <div class="kpi-body">
+          <span class="kpi-label">Total Empleados</span>
+          <span class="kpi-value">{{ totalEmpleados() }}</span>
+          <span class="kpi-desc">registrados en el sistema</span>
+        </div>
+        <div class="kpi-icon-wrap kpi-icon-sky">
+          <span class="material-symbols-outlined">groups</span>
+        </div>
+      </div>
+
+      <div class="kpi-card kpi-green" (click)="irA('/GestionAdministracion/empleado')">
+        <div class="kpi-body">
+          <span class="kpi-label">Empleados Activos</span>
+          <span class="kpi-value">{{ empleadosActivos() }}</span>
+          <span class="kpi-desc">en nómina vigente</span>
+        </div>
+        <div class="kpi-icon-wrap kpi-icon-green">
+          <span class="material-symbols-outlined">person_check</span>
+        </div>
+      </div>
+
+      <div class="kpi-card kpi-indigo" (click)="irA('/GestionAdministracion/rol')">
+        <div class="kpi-body">
+          <span class="kpi-label">Roles Definidos</span>
+          <span class="kpi-value">{{ totalRoles() }}</span>
+          <span class="kpi-desc">perfiles de acceso</span>
+        </div>
+        <div class="kpi-icon-wrap kpi-icon-indigo">
+          <span class="material-symbols-outlined">badge</span>
+        </div>
+      </div>
+
+      <div class="kpi-card kpi-teal" (click)="irA('/GestionAdministracion/expedientes-empleados')">
+        <div class="kpi-body">
+          <span class="kpi-label">Expedientes</span>
+          <span class="kpi-value">{{ totalExpedientes() }}</span>
+          <span class="kpi-desc">archivos de personal</span>
+        </div>
+        <div class="kpi-icon-wrap kpi-icon-teal">
+          <span class="material-symbols-outlined">folder_shared</span>
+        </div>
+      </div>
+
+      <div class="kpi-card kpi-red"
+           [class.kpi-critical]="docsVencidos() > 0"
+           (click)="irA('/GestionAdministracion/expedientes-empleados')">
+        <div class="kpi-body">
+          <span class="kpi-label">Docs. Vencidos</span>
+          <span class="kpi-value">{{ docsVencidos() }}</span>
+          <span class="kpi-desc">requieren renovación</span>
+        </div>
+        <div class="kpi-icon-wrap kpi-icon-red">
+          <span class="material-symbols-outlined">gpp_bad</span>
+        </div>
+        @if (docsVencidos() > 0) {
+          <div class="kpi-alert-badge kpi-alert-badge-red">
+            <span class="material-symbols-outlined">priority_high</span>
+          </div>
+        }
+      </div>
+
+      <div class="kpi-card kpi-amber"
+           [class.kpi-alert]="docsProximosVencer() > 0"
+           (click)="irA('/GestionAdministracion/expedientes-empleados')">
+        <div class="kpi-body">
+          <span class="kpi-label">Por Vencer (30d)</span>
+          <span class="kpi-value">{{ docsProximosVencer() }}</span>
+          <span class="kpi-desc">próximos a expirar</span>
+        </div>
+        <div class="kpi-icon-wrap kpi-icon-amber">
+          <span class="material-symbols-outlined">schedule</span>
+        </div>
+        @if (docsProximosVencer() > 0) {
+          <div class="kpi-alert-badge">
+            <span class="material-symbols-outlined">notification_important</span>
+          </div>
+        }
+      </div>
+
+    </div>
+
+    <!-- ── Main content grid ──────────────────────────────── -->
+    <div class="content-grid">
+
+      <!-- Documentos vencidos -->
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title-wrap">
+            <span class="material-symbols-outlined panel-icon icon-red">gpp_bad</span>
+            <h2 class="panel-title">Documentos Vencidos</h2>
+          </div>
+          <button class="btn-link" (click)="irA('/GestionAdministracion/expedientes-empleados')">Ver todos →</button>
+        </div>
+        <div class="panel-body">
+          @if (alertasVencidos().length === 0) {
+            <div class="empty-state">
+              <span class="material-symbols-outlined empty-icon" style="color:#10b981">verified_user</span>
+              <p style="color:#10b981;font-weight:600">¡Todo al día!</p>
+              <p class="text-muted-sm">No hay documentos vencidos</p>
+            </div>
+          } @else {
+            <div class="doc-alert-list">
+              @for (doc of alertasVencidos(); track doc.idExpedienteDocumentoEmp) {
+                <div class="doc-alert-item item-vencido">
+                  <div class="doc-alert-icon-wrap">
+                    <span class="material-symbols-outlined">gpp_bad</span>
+                  </div>
+                  <div class="doc-alert-info">
+                    <span class="doc-exp-code">{{ doc.codigoExpEmp }}</span>
+                    <span class="doc-tipo">{{ doc.nombreTipoDocumento }}</span>
+                  </div>
+                  <div class="doc-alert-right">
+                    <span class="doc-fecha-venc">{{ formatFecha(doc.fechaVencimiento) }}</span>
+                    <span class="doc-badge badge-vencido">VENCIDO</span>
+                  </div>
+                </div>
+              }
+            </div>
+          }
+        </div>
+      </div>
+
+      <!-- Documentos próximos a vencer -->
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title-wrap">
+            <span class="material-symbols-outlined panel-icon icon-amber">schedule</span>
+            <h2 class="panel-title">Próximos a Vencer (30 días)</h2>
+          </div>
+          <button class="btn-link" (click)="irA('/GestionAdministracion/expedientes-empleados')">Ver todos →</button>
+        </div>
+        <div class="panel-body">
+          @if (alertasProximos().length === 0) {
+            <div class="empty-state">
+              <span class="material-symbols-outlined empty-icon" style="color:#10b981">event_available</span>
+              <p style="color:#10b981;font-weight:600">Sin vencimientos próximos</p>
+              <p class="text-muted-sm">Ningún documento vence en los próximos 30 días</p>
+            </div>
+          } @else {
+            <div class="doc-alert-list">
+              @for (doc of alertasProximos(); track doc.idExpedienteDocumentoEmp) {
+                <div class="doc-alert-item item-proximo">
+                  <div class="doc-alert-icon-wrap">
+                    <span class="material-symbols-outlined">schedule</span>
+                  </div>
+                  <div class="doc-alert-info">
+                    <span class="doc-exp-code">{{ doc.codigoExpEmp }}</span>
+                    <span class="doc-tipo">{{ doc.nombreTipoDocumento }}</span>
+                  </div>
+                  <div class="doc-alert-right">
+                    <span class="doc-fecha-venc">{{ formatFecha(doc.fechaVencimiento) }}</span>
+                    <span class="dias-badge">{{ diasParaVencer(doc.fechaVencimiento) }}d</span>
+                  </div>
+                </div>
+              }
+            </div>
+          }
+        </div>
+      </div>
+
+      <!-- Distribución por rol -->
+      <div class="panel panel-medium">
+        <div class="panel-header">
+          <div class="panel-title-wrap">
+            <span class="material-symbols-outlined panel-icon icon-indigo">badge</span>
+            <h2 class="panel-title">Personal por Rol</h2>
+          </div>
+          <button class="btn-link" (click)="irA('/GestionAdministracion/rol')">Gestionar →</button>
+        </div>
+        <div class="panel-body">
+          @if (distribucionRoles().length === 0) {
+            <div class="empty-state">
+              <span class="material-symbols-outlined empty-icon">badge</span>
+              <p>Sin datos de roles</p>
+            </div>
+          } @else {
+            <div class="cat-list">
+              @for (r of distribucionRoles(); track r.nombre; let i = $index) {
+                <div class="cat-item">
+                  <div class="cat-info">
+                    <span class="cat-dot" [style.background]="rolColors[i % rolColors.length]"></span>
+                    <span class="cat-name">{{ r.nombre }}</span>
+                  </div>
+                  <div class="cat-bar-wrap">
+                    <div class="cat-bar"
+                         [style.width.%]="r.pct"
+                         [style.background]="rolColors[i % rolColors.length]">
+                    </div>
+                  </div>
+                  <span class="cat-pct">{{ r.cantidad }} <small>({{ r.pct }}%)</small></span>
+                </div>
+              }
+            </div>
+          }
+        </div>
+      </div>
+
+      <!-- Listado de empleados recientes -->
+      <div class="panel panel-medium">
+        <div class="panel-header">
+          <div class="panel-title-wrap">
+            <span class="material-symbols-outlined panel-icon icon-sky">person</span>
+            <h2 class="panel-title">Empleados Registrados</h2>
+          </div>
+          <button class="btn-link" (click)="irA('/GestionAdministracion/empleado')">Ver todos →</button>
+        </div>
+        <div class="panel-body">
+          @if (ultimosEmpleados().length === 0) {
+            <div class="empty-state">
+              <span class="material-symbols-outlined empty-icon">person</span>
+              <p>Sin empleados registrados</p>
+            </div>
+          } @else {
+            <div class="empleado-list">
+              @for (emp of ultimosEmpleados(); track emp.dni_empleado) {
+                <div class="empleado-item"
+                     (click)="irA('/GestionAdministracion/expediente-empleado/detalle/' + emp.dni_empleado)">
+                  <div class="empleado-avatar">
+                    <span>{{ emp.nombre.charAt(0) }}{{ emp.apellido1.charAt(0) }}</span>
+                  </div>
+                  <div class="empleado-info">
+                    <span class="empleado-nombre">{{ getNombreCompleto(emp) }}</span>
+                    <span class="empleado-sub">{{ emp.codigo_empleado }} · {{ emp.nombreRol }}</span>
+                  </div>
+                  <div class="empleado-right">
+                    <span class="empleado-dni">{{ emp.dni_empleado }}</span>
+                    @if (emp.estado) {
+                      <span class="estado-emp badge-activo">Activo</span>
+                    } @else {
+                      <span class="estado-emp badge-inactivo-emp">Inactivo</span>
+                    }
+                  </div>
+                </div>
+              }
+            </div>
+          }
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ── Accesos rápidos ────────────────────────────────── -->
+    <div class="quick-actions">
+      <h2 class="section-title">
+        <span class="material-symbols-outlined">bolt</span>
+        Accesos Rápidos
+      </h2>
+      <div class="qa-grid">
+        <button class="qa-card" (click)="irA('/GestionAdministracion/empleado')">
+          <div class="qa-icon-wrap" style="background:rgba(14,165,233,0.12); color:#0ea5e9">
+            <span class="material-symbols-outlined">groups</span>
+          </div>
+          <span class="qa-label">Gestión de Empleados</span>
+        </button>
+        <button class="qa-card" (click)="irA('/GestionAdministracion/rol')">
+          <div class="qa-icon-wrap" style="background:rgba(99,102,241,0.12); color:#6366f1">
+            <span class="material-symbols-outlined">badge</span>
+          </div>
+          <span class="qa-label">Gestión de Roles</span>
+        </button>
+        <button class="qa-card" (click)="irA('/GestionAdministracion/expedientes-empleados')">
+          <div class="qa-icon-wrap" style="background:rgba(20,184,166,0.12); color:#14b8a6">
+            <span class="material-symbols-outlined">folder_shared</span>
+          </div>
+          <span class="qa-label">Expedientes</span>
+        </button>
+        <button class="qa-card" (click)="irA('/GestionAdministracion/tipo-documento-empleado')">
+          <div class="qa-icon-wrap" style="background:rgba(139,92,246,0.12); color:#8b5cf6">
+            <span class="material-symbols-outlined">description</span>
+          </div>
+          <span class="qa-label">Tipos de Documento</span>
+        </button>
+      </div>
+    </div>
+
+  }
+</div>

@@ -4,6 +4,11 @@ import { ComprasLayoutComponent } from './features/compras/layout/compras-layout
 import { AlmacenLayoutComponent } from './features/almacen/layout/almacen-layout.component';
 import { FlotaLayoutComponent } from './features/flota/layout/flota-layout.component';
 import { DashboardPlaceholderComponent } from './shared/components/dashboard-placeholder/dashboard-placeholder.component';
+import { AlmacenDashboardComponent } from './features/almacen/dashboard/almacen-dashboard';
+import { FlotaDashboardComponent } from './features/m-flota/dashboard/flota-dashboard';
+import { AdminDashboardComponent } from './features/m-administracion/dashboard/admin-dashboard';
+import { ComprasDashboardComponent } from './features/compras/dashboard/compras-dashboard';
+import { MantenimientoDashboardComponent } from './features/m-mantenimiento/dashboard/mantenimiento-dashboard';
 import { AreaOperacionComponent } from './features/m-mantenimiento/area-operacion/area-operacion.component';
 import { TipoEquipoComponent } from './features/m-flota/tipo-equipo/tipo-equipo.component';
 import { MarcaEquipoComponent } from './features/m-flota/marca-equipo/marca-equipo.component';
@@ -35,7 +40,7 @@ export const routes: Routes = [
     data: { modulo: 'GestionCompras' },
     children: [
       { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
-      { path: 'dashboard', component: DashboardPlaceholderComponent },
+      { path: 'dashboard', component: ComprasDashboardComponent },
       { path: 'ordenes', loadComponent: () => import('./features/compras/ordenes-compra/orden-lista/orden-lista').then(m => m.OrdenListaComponent) },
       { path: 'ordenes/crear', loadComponent: () => import('./features/compras/ordenes-compra/orden-form/orden-form').then(m => m.OrdenFormComponent) },
       { path: 'ordenes/detalle/:id', loadComponent: () => import('./features/compras/ordenes-compra/orden-detalle/orden-detalle').then(m => m.OrdenDetalleComponent) },
@@ -57,7 +62,7 @@ export const routes: Routes = [
     data: { modulo: 'GestionAlmacen' },
     children: [
       { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
-      { path: 'dashboard', component: DashboardPlaceholderComponent },
+      { path: 'dashboard', component: AlmacenDashboardComponent },
       { path: 'material/registrar', loadComponent: () => import('./features/almacen/material/registrar-material/registrar-material').then(m => m.RegistrarMaterialComponent) },
       { path: 'nota-salida/generar', loadComponent: () => import('./features/almacen/nota-salida/generar-nota-salida/generar-nota-salida').then(m => m.GenerarNotaSalidaComponent) },
       { path: 'vale', loadComponent: () => import('./features/almacen/vale/vale-lista/vale-lista').then(m => m.ValeListaComponent) },
@@ -79,7 +84,7 @@ export const routes: Routes = [
     data: { modulo: 'GestionMantenimiento' },
     children: [
       { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
-      { path: 'dashboard', component: DashboardPlaceholderComponent },
+      { path: 'dashboard', component: MantenimientoDashboardComponent },
       { path: 'orden-trabajo', loadComponent: () => import('./features/m-mantenimiento/orden-trabajo/ot-lista/ot-lista').then(m => m.OTListaComponent) },
       { path: 'orden-trabajo/crear', loadComponent: () => import('./features/m-mantenimiento/orden-trabajo/ot-form/ot-form').then(m => m.OTFormComponent) },
       { path: 'orden-trabajo/detalle/:id', loadComponent: () => import('./features/m-mantenimiento/orden-trabajo/ot-detalle/ot-detalle').then(m => m.OTDetalleComponent) },
@@ -108,7 +113,7 @@ export const routes: Routes = [
     data: { modulo: 'GestionAdministracion' },
     children: [
       { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
-      { path: 'dashboard', component: DashboardPlaceholderComponent },
+      { path: 'dashboard', component: AdminDashboardComponent },
       { path: 'empleado', loadComponent: () => import('./features/m-administracion/empleados/empleado/empleado').then(m => m.Empleado) },
       { path: 'rol', loadComponent: () => import('./features/m-administracion/empleados/rol/rol').then(m => m.Rol) },
       { path: 'tipo-documento-empleado', loadComponent: () => import('./features/m-administracion/empleados/tipo-documento-empleado/tipo-documento-empleado').then(m => m.TipoDocumentoEmpleadoComponent) },
@@ -126,7 +131,7 @@ export const routes: Routes = [
     data: { modulo: 'GestionFlota' },
     children: [
       { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
-      { path: 'dashboard', component: DashboardPlaceholderComponent },
+      { path: 'dashboard', component: FlotaDashboardComponent },
       { path: 'flotas', component: FlotaComponent },
       { path: 'flotas/detalle/:id', component: FlotaDetalleComponent },
       { path: 'equipos', component: EquipoComponent },

@@ -1,0 +1,363 @@
+<div class="dashboard-wrapper">
+
+  <!-- ── Estado de carga / error ───────────────────────────── -->
+  @if (cargando()) {
+    <div class="loading-state">
+      <div class="spinner-ring"></div>
+      <p>Cargando panel de control de compras…</p>
+    </div>
+  } @else if (error()) {
+    <div class="error-state">
+      <span class="material-symbols-outlined error-icon">cloud_off</span>
+      <p>{{ error() }}</p>
+      <button class="btn-retry" (click)="cargarDatos()">
+        <span class="material-symbols-outlined">refresh</span> Reintentar
+      </button>
+    </div>
+  } @else {
+
+    <!-- ── Encabezado ─────────────────────────────────────── -->
+    <div class="dash-header">
+      <div class="dash-header-left">
+        <div class="dash-icon-wrap">
+          <span class="material-symbols-outlined">shopping_cart</span>
+        </div>
+        <div>
+          <h1 class="dash-title">Panel de Control · Compras y Adquisiciones</h1>
+          <p class="dash-subtitle">Bienvenido, <strong>{{ nombreUsuario() }}</strong> · Gestión de SOLPEDs, cotizaciones y órdenes de compra</p>
+        </div>
+      </div>
+      <div class="dash-header-right">
+        <button class="btn-refresh" (click)="cargarDatos()" title="Actualizar datos">
+          <span class="material-symbols-outlined">refresh</span>
+        </button>
+        <button class="btn-primary-sm" (click)="irA('/GestionCompras/solicitudes/crear')">
+          <span class="material-symbols-outlined">add_shopping_cart</span>
+          Nueva SOLPED
+        </button>
+        <button class="btn-accent-sm" (click)="irA('/GestionCompras/ordenes/crear')">
+          <span class="material-symbols-outlined">description</span>
+          Nueva Orden
+        </button>
+      </div>
+    </div>
+
+    <!-- ── Resumen de Montos Financieros ────────────────────── -->
+    <div class="availability-bar-card">
+      <div class="avail-info">
+        <span class="material-symbols-outlined avail-icon">monetization_on</span>
+        <div>
+          <span class="avail-label">Monto Total Aprobado</span>
+          <span class="avail-pct">{{ formatCurrency(montoTotalAprobado()) }}</span>
+        </div>
+      </div>
+      <div class="avail-bar-wrap">
+        <div class="avail-bar" [style.width.%]="100"></div>
+      </div>
+      <div class="avail-detail">
+        <span class="avail-chip chip-activo">
+          <span class="material-symbols-outlined">check_circle</span>
+          {{ ordenesAprobadas() }} OC Aprobadas
+        </span>
+        <span class="avail-chip chip-roles">
+          <span class="material-symbols-outlined">hourglass_empty</span>
+          {{ ordenesPendientes() }} OC Pendientes
+        </span>
+        <span class="avail-chip chip-inactivo">
+          <span class="material-symbols-outlined">warning</span>
+          {{ solicitudesPendientes() }} SOLPEDs por Aprobar
+        </span>
+      </div>
+    </div>
+
+    <!-- ── KPI Cards ──────────────────────────────────────── -->
+    <div class="kpi-grid">
+
+      <div class="kpi-card kpi-orange" (click)="irA('/GestionCompras/solicitudes')">
+        <div class="kpi-body">
+          <span class="kpi-label">Solicitudes Pedido</span>
+          <span class="kpi-value">{{ totalSolicitudes() }}</span>
+          <span class="kpi-desc">SOLPEDs totales</span>
+        </div>
+        <div class="kpi-icon-wrap kpi-icon-orange">
+          <span class="material-symbols-outlined">shopping_bag</span>
+        </div>
+      </div>
+
+      <div class="kpi-card kpi-amber" [class.kpi-alert]="solicitudesPendientes() > 0" (click)="irA('/GestionCompras/solicitudes')">
+        <div class="kpi-body">
+          <span class="kpi-label">SOLPEDs por Aprobar</span>
+          <span class="kpi-value">{{ solicitudesPendientes() }}</span>
+          <span class="kpi-desc">requieren revisión</span>
+        </div>
+        <div class="kpi-icon-wrap kpi-icon-amber">
+          <span class="material-symbols-outlined">pending</span>
+        </div>
+        @if (solicitudesPendientes() > 0) {
+          <div class="kpi-alert-badge">
+            <span class="material-symbols-outlined">notification_important</span>
+          </div>
+        }
+      </div>
+
+      <div class="kpi-card kpi-blue" (click)="irA('/GestionCompras/cotizaciones')">
+        <div class="kpi-body">
+          <span class="kpi-label">Cotizaciones</span>
+          <span class="kpi-value">{{ totalCotizaciones() }}</span>
+          <span class="kpi-desc">ofertas recibidas</span>
+        </div>
+        <div class="kpi-icon-wrap kpi-icon-blue">
+          <span class="material-symbols-outlined">request_quote</span>
+        </div>
+      </div>
+
+      <div class="kpi-card kpi-purple" (click)="irA('/GestionCompras/ordenes')">
+        <div class="kpi-body">
+          <span class="kpi-label">Ordenes de Compra</span>
+          <span class="kpi-value">{{ totalOrdenes() }}</span>
+          <span class="kpi-desc">órdenes emitidas</span>
+        </div>
+        <div class="kpi-icon-wrap kpi-icon-purple">
+          <span class="material-symbols-outlined">receipt_long</span>
+        </div>
+      </div>
+
+      <div class="kpi-card kpi-green" (click)="irA('/GestionCompras/proveedores')">
+        <div class="kpi-body">
+          <span class="kpi-label">Proveedores</span>
+          <span class="kpi-value">{{ totalProveedores() }}</span>
+          <span class="kpi-desc">proveedores inscritos</span>
+        </div>
+        <div class="kpi-icon-wrap kpi-icon-green">
+          <span class="material-symbols-outlined">storefront</span>
+        </div>
+      </div>
+
+      <div class="kpi-card kpi-indigo" (click)="irA('/GestionCompras/ordenes')">
+        <div class="kpi-body">
+          <span class="kpi-label">OC Aprobadas</span>
+          <span class="kpi-value">{{ ordenesAprobadas() }}</span>
+          <span class="kpi-desc">compras confirmadas</span>
+        </div>
+        <div class="kpi-icon-wrap kpi-icon-indigo">
+          <span class="material-symbols-outlined">task_alt</span>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ── Main content grid ──────────────────────────────── -->
+    <div class="content-grid">
+
+      <!-- Últimas órdenes de compra -->
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title-wrap">
+            <span class="material-symbols-outlined panel-icon icon-purple">receipt_long</span>
+            <h2 class="panel-title">Órdenes de Compra Recientes</h2>
+          </div>
+          <button class="btn-link" (click)="irA('/GestionCompras/ordenes')">Ver todas →</button>
+        </div>
+        <div class="panel-body">
+          @if (ultimasOrdenes().length === 0) {
+            <div class="empty-state">
+              <span class="material-symbols-outlined empty-icon">receipt_long</span>
+              <p>No hay órdenes de compra registradas</p>
+            </div>
+          } @else {
+            <table class="mini-table">
+              <thead>
+                <tr>
+                  <th>Nro Orden</th>
+                  <th>Proveedor</th>
+                  <th>Monto</th>
+                  <th>Fecha</th>
+                  <th>Estado</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (o of ultimasOrdenes(); track o.id_orden_compra) {
+                  <tr (click)="irA('/GestionCompras/ordenes/detalle/' + o.id_orden_compra)" class="row-clickable">
+                    <td><span class="code-chip">{{ o.nro_orden }}</span></td>
+                    <td><span class="text-truncate">{{ o.razon_social_proveedor }}</span></td>
+                    <td><strong>{{ formatCurrency(o.total) }}</strong></td>
+                    <td class="text-muted">{{ formatFecha(o.fecha_orden) }}</td>
+                    <td>
+                      <span class="estado-chip" [ngClass]="getEstadoOrdenClass(o.estado)">{{ o.estado }}</span>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          }
+        </div>
+      </div>
+
+      <!-- Últimas solicitudes de pedido -->
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title-wrap">
+            <span class="material-symbols-outlined panel-icon icon-orange">shopping_bag</span>
+            <h2 class="panel-title">Solicitudes de Pedido Recientes</h2>
+          </div>
+          <button class="btn-link" (click)="irA('/GestionCompras/solicitudes')">Ver todas →</button>
+        </div>
+        <div class="panel-body">
+          @if (ultimasSolicitudes().length === 0) {
+            <div class="empty-state">
+              <span class="material-symbols-outlined empty-icon">shopping_bag</span>
+              <p>No hay solicitudes de pedido registradas</p>
+            </div>
+          } @else {
+            <table class="mini-table">
+              <thead>
+                <tr>
+                  <th>Código</th>
+                  <th>Solicitado Por</th>
+                  <th>Items</th>
+                  <th>Fecha</th>
+                  <th>Estado</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (s of ultimasSolicitudes(); track s.id_solicitud_pedido) {
+                  <tr (click)="irA('/GestionCompras/solicitudes/detalle/' + s.id_solicitud_pedido)" class="row-clickable">
+                    <td><span class="code-chip">{{ s.cod_solicitud }}</span></td>
+                    <td>{{ s.nombre_empleado }}</td>
+                    <td><span class="count-badge">{{ s.detalles.length }}</span></td>
+                    <td class="text-muted">{{ formatFecha(s.fecha_creacion) }}</td>
+                    <td>
+                      <span class="estado-chip" [ngClass]="getEstadoSolpedClass(s.estado)">{{ s.estado }}</span>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          }
+        </div>
+      </div>
+
+      <!-- Distribución de órdenes por estado -->
+      <div class="panel panel-medium">
+        <div class="panel-header">
+          <div class="panel-title-wrap">
+            <span class="material-symbols-outlined panel-icon icon-blue">bar_chart</span>
+            <h2 class="panel-title">Estados de Órdenes de Compra</h2>
+          </div>
+          <button class="btn-link" (click)="irA('/GestionCompras/ordenes')">Detalles →</button>
+        </div>
+        <div class="panel-body">
+          @if (distribucionOrdenes().length === 0) {
+            <div class="empty-state">
+              <span class="material-symbols-outlined empty-icon">bar_chart</span>
+              <p>Sin datos de estados</p>
+            </div>
+          } @else {
+            <div class="cat-list">
+              @for (o of distribucionOrdenes(); track o.nombre; let i = $index) {
+                <div class="cat-item">
+                  <div class="cat-info">
+                    <span class="cat-dot" [style.background]="statusColors[i % statusColors.length]"></span>
+                    <span class="cat-name">{{ o.nombre }}</span>
+                  </div>
+                  <div class="cat-bar-wrap">
+                    <div class="cat-bar"
+                         [style.width.%]="o.pct"
+                         [style.background]="statusColors[i % statusColors.length]">
+                    </div>
+                  </div>
+                  <span class="cat-pct">{{ o.cantidad }} <small>({{ o.pct }}%)</small></span>
+                </div>
+              }
+            </div>
+          }
+        </div>
+      </div>
+
+      <!-- Proveedores por Categoría -->
+      <div class="panel panel-medium">
+        <div class="panel-header">
+          <div class="panel-title-wrap">
+            <span class="material-symbols-outlined panel-icon icon-green">storefront</span>
+            <h2 class="panel-title">Proveedores por Rubro</h2>
+          </div>
+          <button class="btn-link" (click)="irA('/GestionCompras/proveedores')">Gestionar →</button>
+        </div>
+        <div class="panel-body">
+          @if (distribucionProveedores().length === 0) {
+            <div class="empty-state">
+              <span class="material-symbols-outlined empty-icon">storefront</span>
+              <p>Sin rubros registrados</p>
+            </div>
+          } @else {
+            <div class="cat-list">
+              @for (p of distribucionProveedores(); track p.nombre; let i = $index) {
+                <div class="cat-item">
+                  <div class="cat-info">
+                    <span class="cat-dot" [style.background]="colors[i % colors.length]"></span>
+                    <span class="cat-name">{{ p.nombre }}</span>
+                  </div>
+                  <div class="cat-bar-wrap">
+                    <div class="cat-bar"
+                         [style.width.%]="p.pct"
+                         [style.background]="colors[i % colors.length]">
+                    </div>
+                  </div>
+                  <span class="cat-pct">{{ p.cantidad }} <small>({{ p.pct }}%)</small></span>
+                </div>
+              }
+            </div>
+          }
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ── Accesos rápidos ────────────────────────────────── -->
+    <div class="quick-actions">
+      <h2 class="section-title">
+        <span class="material-symbols-outlined">bolt</span>
+        Accesos Rápidos
+      </h2>
+      <div class="qa-grid">
+        <button class="qa-card" (click)="irA('/GestionCompras/solicitudes')">
+          <div class="qa-icon-wrap" style="background:rgba(249,115,22,0.12); color:#f97316">
+            <span class="material-symbols-outlined">shopping_bag</span>
+          </div>
+          <span class="qa-label">Solicitudes Pedido (SOLPED)</span>
+        </button>
+        <button class="qa-card" (click)="irA('/GestionCompras/cotizaciones')">
+          <div class="qa-icon-wrap" style="background:rgba(59,130,246,0.12); color:#3b82f6">
+            <span class="material-symbols-outlined">request_quote</span>
+          </div>
+          <span class="qa-label">Cotizaciones Proveedores</span>
+        </button>
+        <button class="qa-card" (click)="irA('/GestionCompras/ordenes')">
+          <div class="qa-icon-wrap" style="background:rgba(139,92,246,0.12); color:#8b5cf6">
+            <span class="material-symbols-outlined">receipt_long</span>
+          </div>
+          <span class="qa-label">Órdenes de Compra</span>
+        </button>
+        <button class="qa-card" (click)="irA('/GestionCompras/proveedores')">
+          <div class="qa-icon-wrap" style="background:rgba(16,185,129,0.12); color:#10b981">
+            <span class="material-symbols-outlined">storefront</span>
+          </div>
+          <span class="qa-label">Directorio de Proveedores</span>
+        </button>
+        <button class="qa-card" (click)="irA('/GestionCompras/solicitudes/crear')">
+          <div class="qa-icon-wrap" style="background:rgba(245,158,11,0.12); color:#f59e0b">
+            <span class="material-symbols-outlined">add_shopping_cart</span>
+          </div>
+          <span class="qa-label">Crear Nueva SOLPED</span>
+        </button>
+        <button class="qa-card" (click)="irA('/GestionCompras/ordenes/crear')">
+          <div class="qa-icon-wrap" style="background:rgba(20,184,166,0.12); color:#14b8a6">
+            <span class="material-symbols-outlined">description</span>
+          </div>
+          <span class="qa-label">Crear Orden Compra</span>
+        </button>
+      </div>
+    </div>
+
+  }
+</div>

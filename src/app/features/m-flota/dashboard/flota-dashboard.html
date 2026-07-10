@@ -1,0 +1,380 @@
+<div class="dashboard-wrapper">
+
+  <!-- ── Estado de carga / error ───────────────────────────── -->
+  @if (cargando()) {
+    <div class="loading-state">
+      <div class="spinner-ring"></div>
+      <p>Cargando panel de control…</p>
+    </div>
+  } @else if (error()) {
+    <div class="error-state">
+      <span class="material-symbols-outlined error-icon">cloud_off</span>
+      <p>{{ error() }}</p>
+      <button class="btn-retry" (click)="cargarDatos()">
+        <span class="material-symbols-outlined">refresh</span> Reintentar
+      </button>
+    </div>
+  } @else {
+
+    <!-- ── Encabezado ─────────────────────────────────────── -->
+    <div class="dash-header">
+      <div class="dash-header-left">
+        <div class="dash-icon-wrap">
+          <span class="material-symbols-outlined">local_shipping</span>
+        </div>
+        <div>
+          <h1 class="dash-title">Panel de Control · Gestión de Flota</h1>
+          <p class="dash-subtitle">Bienvenido, <strong>{{ nombreUsuario() }}</strong> · Supervisión y estado de equipos</p>
+        </div>
+      </div>
+      <div class="dash-header-right">
+        <button class="btn-refresh" (click)="cargarDatos()" title="Actualizar datos">
+          <span class="material-symbols-outlined">refresh</span>
+        </button>
+        <button class="btn-primary-sm" (click)="irA('/GestionFlota/equipos')">
+          <span class="material-symbols-outlined">directions_car</span>
+          Equipos
+        </button>
+        <button class="btn-accent-sm" (click)="irA('/GestionFlota/historial-horometros/registrar')">
+          <span class="material-symbols-outlined">speed</span>
+          Horómetro
+        </button>
+      </div>
+    </div>
+
+    <!-- ── Barra de disponibilidad operativa ─────────────────── -->
+    <div class="availability-bar-card">
+      <div class="avail-info">
+        <span class="material-symbols-outlined avail-icon">monitoring</span>
+        <div>
+          <span class="avail-label">Disponibilidad Operativa</span>
+          <span class="avail-pct">{{ porcentajeOperativos() }}%</span>
+        </div>
+      </div>
+      <div class="avail-bar-wrap">
+        <div class="avail-bar" [style.width.%]="porcentajeOperativos()"></div>
+      </div>
+      <div class="avail-detail">
+        <span class="avail-chip chip-op">
+          <span class="material-symbols-outlined">check_circle</span>
+          {{ equiposOperativos() }} Operativos
+        </span>
+        <span class="avail-chip chip-mant">
+          <span class="material-symbols-outlined">build</span>
+          {{ equiposMantenimiento() }} En Mant.
+        </span>
+        <span class="avail-chip chip-inact">
+          <span class="material-symbols-outlined">cancel</span>
+          {{ equiposInactivos() }} Inactivos
+        </span>
+      </div>
+    </div>
+
+    <!-- ── KPI Cards ──────────────────────────────────────── -->
+    <div class="kpi-grid">
+
+      <div class="kpi-card kpi-indigo" (click)="irA('/GestionFlota/equipos')">
+        <div class="kpi-body">
+          <span class="kpi-label">Total Equipos</span>
+          <span class="kpi-value">{{ totalEquipos() }}</span>
+          <span class="kpi-desc">registrados en el sistema</span>
+        </div>
+        <div class="kpi-icon-wrap kpi-icon-indigo">
+          <span class="material-symbols-outlined">directions_car</span>
+        </div>
+      </div>
+
+      <div class="kpi-card kpi-green" (click)="irA('/GestionFlota/equipos')">
+        <div class="kpi-body">
+          <span class="kpi-label">Operativos</span>
+          <span class="kpi-value">{{ equiposOperativos() }}</span>
+          <span class="kpi-desc">en servicio activo</span>
+        </div>
+        <div class="kpi-icon-wrap kpi-icon-green">
+          <span class="material-symbols-outlined">check_circle</span>
+        </div>
+      </div>
+
+      <div class="kpi-card kpi-yellow"
+           [class.kpi-alert]="equiposMantenimiento() > 0"
+           (click)="irA('/GestionFlota/equipos')">
+        <div class="kpi-body">
+          <span class="kpi-label">En Mantenimiento</span>
+          <span class="kpi-value">{{ equiposMantenimiento() }}</span>
+          <span class="kpi-desc">fuera de servicio temporal</span>
+        </div>
+        <div class="kpi-icon-wrap kpi-icon-yellow">
+          <span class="material-symbols-outlined">build</span>
+        </div>
+        @if (equiposMantenimiento() > 0) {
+          <div class="kpi-alert-badge">
+            <span class="material-symbols-outlined">notification_important</span>
+          </div>
+        }
+      </div>
+
+      <div class="kpi-card kpi-red"
+           [class.kpi-critical]="equiposInactivos() > 0"
+           (click)="irA('/GestionFlota/equipos')">
+        <div class="kpi-body">
+          <span class="kpi-label">Inactivos</span>
+          <span class="kpi-value">{{ equiposInactivos() }}</span>
+          <span class="kpi-desc">sin operación</span>
+        </div>
+        <div class="kpi-icon-wrap kpi-icon-red">
+          <span class="material-symbols-outlined">cancel</span>
+        </div>
+        @if (equiposInactivos() > 0) {
+          <div class="kpi-alert-badge kpi-alert-badge-red">
+            <span class="material-symbols-outlined">priority_high</span>
+          </div>
+        }
+      </div>
+
+      <div class="kpi-card kpi-blue" (click)="irA('/GestionFlota/flotas')">
+        <div class="kpi-body">
+          <span class="kpi-label">Total Flotas</span>
+          <span class="kpi-value">{{ totalFlotas() }}</span>
+          <span class="kpi-desc">grupos de equipos</span>
+        </div>
+        <div class="kpi-icon-wrap kpi-icon-blue">
+          <span class="material-symbols-outlined">conveyor_belt</span>
+        </div>
+      </div>
+
+      <div class="kpi-card kpi-purple" (click)="irA('/GestionFlota/historial-horometros')">
+        <div class="kpi-body">
+          <span class="kpi-label">Horas Operadas</span>
+          <span class="kpi-value kpi-value-sm">{{ totalHorasOperadas().toLocaleString('es-PE') }}</span>
+          <span class="kpi-desc">total acumulado (h)</span>
+        </div>
+        <div class="kpi-icon-wrap kpi-icon-purple">
+          <span class="material-symbols-outlined">speed</span>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ── Main content grid ──────────────────────────────── -->
+    <div class="content-grid">
+
+      <!-- Equipos en alerta -->
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title-wrap">
+            <span class="material-symbols-outlined panel-icon icon-yellow">warning</span>
+            <h2 class="panel-title">Equipos Fuera de Servicio</h2>
+          </div>
+          <button class="btn-link" (click)="irA('/GestionFlota/equipos')">Ver todos →</button>
+        </div>
+        <div class="panel-body">
+          @if (equiposAlerta().length === 0) {
+            <div class="empty-state">
+              <span class="material-symbols-outlined empty-icon" style="color:#10b981">check_circle</span>
+              <p style="color:#10b981;font-weight:600">¡Toda la flota operativa!</p>
+              <p class="text-muted-sm">No hay equipos fuera de servicio</p>
+            </div>
+          } @else {
+            <div class="equipo-alert-list">
+              @for (eq of equiposAlerta(); track eq.idEquipo) {
+                <div class="equipo-alert-item" [class.item-mantenimiento]="eq.estadoOperativo === 'MANTENIMIENTO'"
+                     [class.item-inactivo]="eq.estadoOperativo === 'INACTIVO'">
+                  <div class="equipo-alert-icon-wrap">
+                    <span class="material-symbols-outlined">{{ getEstadoIcon(eq.estadoOperativo) }}</span>
+                  </div>
+                  <div class="equipo-alert-info">
+                    <span class="equipo-code">{{ eq.codEqp }}</span>
+                    <span class="equipo-placa">{{ eq.placaEqp }}</span>
+                    <span class="equipo-tipo">{{ eq.nombreTipo }} · {{ eq.nombreMarca }}</span>
+                  </div>
+                  <div class="equipo-alert-right">
+                    <span class="equipo-flota-tag">{{ eq.nombreFlota || '—' }}</span>
+                    <span class="estado-badge" [ngClass]="getEstadoClass(eq.estadoOperativo)">{{ eq.estadoOperativo }}</span>
+                  </div>
+                </div>
+              }
+            </div>
+          }
+        </div>
+      </div>
+
+      <!-- Últimos registros de horómetro -->
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title-wrap">
+            <span class="material-symbols-outlined panel-icon icon-indigo">speed</span>
+            <h2 class="panel-title">Últimos Registros de Horómetro</h2>
+          </div>
+          <button class="btn-link" (click)="irA('/GestionFlota/historial-horometros')">Ver historial →</button>
+        </div>
+        <div class="panel-body">
+          @if (ultimosHorometros().length === 0) {
+            <div class="empty-state">
+              <span class="material-symbols-outlined empty-icon">speed</span>
+              <p>Sin registros de horómetro</p>
+            </div>
+          } @else {
+            <table class="mini-table">
+              <thead>
+                <tr>
+                  <th>Código</th>
+                  <th>Equipo</th>
+                  <th>Lectura</th>
+                  <th>Horas Op.</th>
+                  <th>Fecha</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (h of ultimosHorometros(); track h.codigo_hist) {
+                  <tr class="row-clickable" (click)="irA('/GestionFlota/historial-horometros/detalle/' + h.codigo_hist)">
+                    <td><span class="code-chip">{{ h.codigo_hist }}</span></td>
+                    <td><span class="equipo-id-chip">EQP-{{ h.id_equipo }}</span></td>
+                    <td><span class="lectura-val">{{ h.lectura_actual }} h</span></td>
+                    <td>
+                      <span class="horas-badge">+{{ h.horas_operadas }} h</span>
+                    </td>
+                    <td class="text-muted">{{ formatFecha(h.fecha_registro) }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          }
+        </div>
+      </div>
+
+      <!-- Distribución por flota -->
+      <div class="panel panel-medium">
+        <div class="panel-header">
+          <div class="panel-title-wrap">
+            <span class="material-symbols-outlined panel-icon icon-blue">conveyor_belt</span>
+            <h2 class="panel-title">Equipos por Flota</h2>
+          </div>
+          <button class="btn-link" (click)="irA('/GestionFlota/flotas')">Gestionar →</button>
+        </div>
+        <div class="panel-body">
+          @if (distribucionFlotas().length === 0) {
+            <div class="empty-state">
+              <span class="material-symbols-outlined empty-icon">conveyor_belt</span>
+              <p>Sin datos de flotas</p>
+            </div>
+          } @else {
+            <div class="cat-list">
+              @for (f of distribucionFlotas(); track f.nombre; let i = $index) {
+                <div class="cat-item">
+                  <div class="cat-info">
+                    <span class="cat-dot" [style.background]="chartColors[i]"></span>
+                    <span class="cat-name">{{ f.nombre }}</span>
+                  </div>
+                  <div class="cat-bar-wrap">
+                    <div class="cat-bar"
+                         [style.width.%]="f.pct"
+                         [style.background]="chartColors[i]">
+                    </div>
+                  </div>
+                  <span class="cat-pct">{{ f.cantidad }} <small>({{ f.pct }}%)</small></span>
+                </div>
+              }
+            </div>
+          }
+        </div>
+      </div>
+
+      <!-- Distribución por tipo de equipo -->
+      <div class="panel panel-medium">
+        <div class="panel-header">
+          <div class="panel-title-wrap">
+            <span class="material-symbols-outlined panel-icon icon-purple">category</span>
+            <h2 class="panel-title">Equipos por Tipo</h2>
+          </div>
+          <button class="btn-link" (click)="irA('/GestionFlota/tipo-equipo')">Gestionar →</button>
+        </div>
+        <div class="panel-body">
+          @if (distribucionTipos().length === 0) {
+            <div class="empty-state">
+              <span class="material-symbols-outlined empty-icon">category</span>
+              <p>Sin datos de tipos</p>
+            </div>
+          } @else {
+            <div class="cat-list">
+              @for (t of distribucionTipos(); track t.nombre; let i = $index) {
+                <div class="cat-item">
+                  <div class="cat-info">
+                    <span class="cat-dot" [style.background]="tipoColors[i]"></span>
+                    <span class="cat-name">{{ t.nombre }}</span>
+                  </div>
+                  <div class="cat-bar-wrap">
+                    <div class="cat-bar"
+                         [style.width.%]="t.pct"
+                         [style.background]="tipoColors[i]">
+                    </div>
+                  </div>
+                  <span class="cat-pct">{{ t.cantidad }} <small>({{ t.pct }}%)</small></span>
+                </div>
+              }
+            </div>
+          }
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ── Accesos rápidos ────────────────────────────────── -->
+    <div class="quick-actions">
+      <h2 class="section-title">
+        <span class="material-symbols-outlined">bolt</span>
+        Accesos Rápidos
+      </h2>
+      <div class="qa-grid">
+        <button class="qa-card" (click)="irA('/GestionFlota/equipos')">
+          <div class="qa-icon-wrap" style="background:rgba(99,102,241,0.12); color:#6366f1">
+            <span class="material-symbols-outlined">directions_car</span>
+          </div>
+          <span class="qa-label">Lista de Equipos</span>
+        </button>
+        <button class="qa-card" (click)="irA('/GestionFlota/flotas')">
+          <div class="qa-icon-wrap" style="background:rgba(59,130,246,0.12); color:#3b82f6">
+            <span class="material-symbols-outlined">conveyor_belt</span>
+          </div>
+          <span class="qa-label">Gestión de Flotas</span>
+        </button>
+        <button class="qa-card" (click)="irA('/GestionFlota/historial-horometros/registrar')">
+          <div class="qa-icon-wrap" style="background:rgba(139,92,246,0.12); color:#8b5cf6">
+            <span class="material-symbols-outlined">speed</span>
+          </div>
+          <span class="qa-label">Registrar Horómetro</span>
+        </button>
+        <button class="qa-card" (click)="irA('/GestionFlota/historial-horometros')">
+          <div class="qa-icon-wrap" style="background:rgba(16,185,129,0.12); color:#10b981">
+            <span class="material-symbols-outlined">history</span>
+          </div>
+          <span class="qa-label">Historial Horómetros</span>
+        </button>
+        <button class="qa-card" (click)="irA('/GestionFlota/expedientes')">
+          <div class="qa-icon-wrap" style="background:rgba(245,158,11,0.12); color:#f59e0b">
+            <span class="material-symbols-outlined">folder_open</span>
+          </div>
+          <span class="qa-label">Expedientes</span>
+        </button>
+        <button class="qa-card" (click)="irA('/GestionFlota/area-operacion')">
+          <div class="qa-icon-wrap" style="background:rgba(239,68,68,0.12); color:#ef4444">
+            <span class="material-symbols-outlined">location_on</span>
+          </div>
+          <span class="qa-label">Áreas de Operación</span>
+        </button>
+        <button class="qa-card" (click)="irA('/GestionFlota/tipo-equipo')">
+          <div class="qa-icon-wrap" style="background:rgba(20,184,166,0.12); color:#14b8a6">
+            <span class="material-symbols-outlined">category</span>
+          </div>
+          <span class="qa-label">Tipos de Equipo</span>
+        </button>
+        <button class="qa-card" (click)="irA('/GestionFlota/marca-equipo')">
+          <div class="qa-icon-wrap" style="background:rgba(249,115,22,0.12); color:#f97316">
+            <span class="material-symbols-outlined">verified</span>
+          </div>
+          <span class="qa-label">Marcas</span>
+        </button>
+      </div>
+    </div>
+
+  }
+</div>

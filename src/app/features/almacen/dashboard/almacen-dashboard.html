@@ -1,0 +1,353 @@
+<div class="dashboard-wrapper">
+
+  <!-- ── Estado de carga / error ───────────────────────────── -->
+  @if (cargando()) {
+    <div class="loading-state">
+      <div class="spinner-ring"></div>
+      <p>Cargando panel de control…</p>
+    </div>
+  } @else if (error()) {
+    <div class="error-state">
+      <span class="material-symbols-outlined error-icon">cloud_off</span>
+      <p>{{ error() }}</p>
+      <button class="btn-retry" (click)="cargarDatos()">
+        <span class="material-symbols-outlined">refresh</span> Reintentar
+      </button>
+    </div>
+  } @else {
+
+    <!-- ── Encabezado ─────────────────────────────────────── -->
+    <div class="dash-header">
+      <div class="dash-header-left">
+        <div class="dash-icon-wrap">
+          <span class="material-symbols-outlined">warehouse</span>
+        </div>
+        <div>
+          <h1 class="dash-title">Panel de Control · Almacén</h1>
+          <p class="dash-subtitle">Bienvenido, <strong>{{ nombreUsuario() }}</strong> · Gestión de Inventario y Materiales</p>
+        </div>
+      </div>
+      <div class="dash-header-right">
+        <button class="btn-refresh" (click)="cargarDatos()" title="Actualizar datos">
+          <span class="material-symbols-outlined">refresh</span>
+        </button>
+        <button class="btn-primary-sm" (click)="irA('/GestionAlmacen/material/registrar')">
+          <span class="material-symbols-outlined">add</span>
+          Nuevo Material
+        </button>
+        <button class="btn-accent-sm" (click)="irA('/GestionAlmacen/vale/crear')">
+          <span class="material-symbols-outlined">receipt_long</span>
+          Crear Vale
+        </button>
+      </div>
+    </div>
+
+    <!-- ── KPI Cards ──────────────────────────────────────── -->
+    <div class="kpi-grid">
+
+      <div class="kpi-card kpi-green" (click)="irA('/GestionAlmacen/material/kardex')">
+        <div class="kpi-body">
+          <span class="kpi-label">Total Materiales</span>
+          <span class="kpi-value">{{ totalMateriales() }}</span>
+          <span class="kpi-desc">ítems registrados</span>
+        </div>
+        <div class="kpi-icon-wrap kpi-icon-green">
+          <span class="material-symbols-outlined">inventory_2</span>
+        </div>
+      </div>
+
+      <div class="kpi-card kpi-blue" (click)="irA('/GestionAlmacen/material/kardex')">
+        <div class="kpi-body">
+          <span class="kpi-label">Stock Total</span>
+          <span class="kpi-value">{{ totalStock() }}</span>
+          <span class="kpi-desc">unidades en inventario</span>
+        </div>
+        <div class="kpi-icon-wrap kpi-icon-blue">
+          <span class="material-symbols-outlined">stacked_bar_chart</span>
+        </div>
+      </div>
+
+      <div class="kpi-card kpi-yellow" [class.kpi-alert]="valesPendientes() > 0" (click)="irA('/GestionAlmacen/vale')">
+        <div class="kpi-body">
+          <span class="kpi-label">Vales Pendientes</span>
+          <span class="kpi-value">{{ valesPendientes() }}</span>
+          <span class="kpi-desc">requieren despacho</span>
+        </div>
+        <div class="kpi-icon-wrap kpi-icon-yellow">
+          <span class="material-symbols-outlined">pending_actions</span>
+        </div>
+        @if (valesPendientes() > 0) {
+          <div class="kpi-alert-badge">
+            <span class="material-symbols-outlined">notification_important</span>
+          </div>
+        }
+      </div>
+
+      <div class="kpi-card kpi-purple" (click)="irA('/GestionAlmacen/materiales-reservados')">
+        <div class="kpi-body">
+          <span class="kpi-label">Vales Despachados</span>
+          <span class="kpi-value">{{ valesDespachados() }}</span>
+          <span class="kpi-desc">completados</span>
+        </div>
+        <div class="kpi-icon-wrap kpi-icon-purple">
+          <span class="material-symbols-outlined">check_circle</span>
+        </div>
+      </div>
+
+      <div class="kpi-card kpi-red" [class.kpi-critical]="materialesAgotados() > 0" (click)="irA('/GestionAlmacen/material/kardex')">
+        <div class="kpi-body">
+          <span class="kpi-label">Agotados</span>
+          <span class="kpi-value">{{ materialesAgotados() }}</span>
+          <span class="kpi-desc">sin stock</span>
+        </div>
+        <div class="kpi-icon-wrap kpi-icon-red">
+          <span class="material-symbols-outlined">remove_shopping_cart</span>
+        </div>
+        @if (materialesAgotados() > 0) {
+          <div class="kpi-alert-badge kpi-alert-badge-red">
+            <span class="material-symbols-outlined">priority_high</span>
+          </div>
+        }
+      </div>
+
+      <div class="kpi-card kpi-orange" [class.kpi-warning]="materialesMinimo() > 0" (click)="irA('/GestionAlmacen/material/kardex')">
+        <div class="kpi-body">
+          <span class="kpi-label">Stock Mínimo</span>
+          <span class="kpi-value">{{ materialesMinimo() }}</span>
+          <span class="kpi-desc">nivel crítico</span>
+        </div>
+        <div class="kpi-icon-wrap kpi-icon-orange">
+          <span class="material-symbols-outlined">warning_amber</span>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ── Main content grid ──────────────────────────────── -->
+    <div class="content-grid">
+
+      <!-- Vales pendientes -->
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title-wrap">
+            <span class="material-symbols-outlined panel-icon icon-yellow">pending_actions</span>
+            <h2 class="panel-title">Vales Pendientes de Despacho</h2>
+          </div>
+          <button class="btn-link" (click)="irA('/GestionAlmacen/vale')">Ver todos →</button>
+        </div>
+        <div class="panel-body">
+          @if (ultimosValesPend().length === 0) {
+            <div class="empty-state">
+              <span class="material-symbols-outlined empty-icon">inbox</span>
+              <p>No hay vales pendientes</p>
+            </div>
+          } @else {
+            <table class="mini-table">
+              <thead>
+                <tr>
+                  <th>Código</th>
+                  <th>OT</th>
+                  <th>Solicitante</th>
+                  <th>Fecha</th>
+                  <th>Items</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (vale of ultimosValesPend(); track vale.id_vale) {
+                  <tr (click)="irA('/GestionAlmacen/vale/detalle/' + vale.id_vale)" class="row-clickable">
+                    <td><span class="code-chip">{{ vale.cod_vale }}</span></td>
+                    <td>
+                      @if (vale.cod_ot) {
+                        <span class="ot-chip">{{ vale.cod_ot }}</span>
+                      } @else {
+                        <span class="text-muted">—</span>
+                      }
+                    </td>
+                    <td>{{ vale.solicitado_por }}</td>
+                    <td class="text-muted">{{ formatFecha(vale.fecha_creacion) }}</td>
+                    <td><span class="count-badge">{{ vale.materiales.length }}</span></td>
+                    <td>
+                      <span class="estado-pend">Pendiente</span>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          }
+        </div>
+      </div>
+
+      <!-- Alertas de stock -->
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title-wrap">
+            <span class="material-symbols-outlined panel-icon icon-red">warning</span>
+            <h2 class="panel-title">Alertas de Stock Crítico</h2>
+          </div>
+          <button class="btn-link" (click)="irA('/GestionAlmacen/material/kardex')">Ver Kardex →</button>
+        </div>
+        <div class="panel-body">
+          @if (alertasMateriales().length === 0) {
+            <div class="empty-state">
+              <span class="material-symbols-outlined empty-icon" style="color:#10b981">check_circle</span>
+              <p style="color:#10b981;font-weight:600">¡Stock en buen estado!</p>
+              <p class="text-muted-sm">No hay materiales en estado crítico</p>
+            </div>
+          } @else {
+            <div class="alert-list">
+              @for (mat of alertasMateriales(); track mat.id_material) {
+                <div class="alert-item" [ngClass]="getStockAlertClass(mat)">
+                  <span class="material-symbols-outlined alert-item-icon">{{ getStockAlertIcon(mat) }}</span>
+                  <div class="alert-item-info">
+                    <span class="alert-item-code">{{ mat.cod_materia }}</span>
+                    <span class="alert-item-name">{{ mat.descripcion }}</span>
+                  </div>
+                  <div class="alert-item-stock">
+                    <span class="stock-number">{{ mat.stock }}</span>
+                    <span class="stock-unit">{{ mat.nombre_unidad }}</span>
+                  </div>
+                  <span class="estado-chip" [ngClass]="'chip-' + mat.estado.toLowerCase()">{{ mat.estado }}</span>
+                </div>
+              }
+            </div>
+          }
+        </div>
+      </div>
+
+      <!-- Distribución por categoría -->
+      <div class="panel panel-medium">
+        <div class="panel-header">
+          <div class="panel-title-wrap">
+            <span class="material-symbols-outlined panel-icon icon-blue">category</span>
+            <h2 class="panel-title">Materiales por Categoría</h2>
+          </div>
+          <button class="btn-link" (click)="irA('/GestionAlmacen/categoria-material')">Gestionar →</button>
+        </div>
+        <div class="panel-body">
+          @if (distribucionCategorias().length === 0) {
+            <div class="empty-state">
+              <span class="material-symbols-outlined empty-icon">category</span>
+              <p>Sin datos de categorías</p>
+            </div>
+          } @else {
+            <div class="cat-list">
+              @for (cat of distribucionCategorias(); track cat.nombre; let i = $index) {
+                <div class="cat-item">
+                  <div class="cat-info">
+                    <span class="cat-dot" [style.background]="catColors[i]"></span>
+                    <span class="cat-name">{{ cat.nombre }}</span>
+                  </div>
+                  <div class="cat-bar-wrap">
+                    <div class="cat-bar"
+                         [style.width.%]="cat.pct"
+                         [style.background]="catColors[i]">
+                    </div>
+                  </div>
+                  <span class="cat-pct">{{ cat.cantidad }} <small>({{ cat.pct }}%)</small></span>
+                </div>
+              }
+            </div>
+          }
+        </div>
+      </div>
+
+      <!-- Últimos vales despachados -->
+      <div class="panel panel-medium">
+        <div class="panel-header">
+          <div class="panel-title-wrap">
+            <span class="material-symbols-outlined panel-icon icon-green">task_alt</span>
+            <h2 class="panel-title">Últimos Despachos</h2>
+          </div>
+          <button class="btn-link" (click)="irA('/GestionAlmacen/vale')">Ver historial →</button>
+        </div>
+        <div class="panel-body">
+          @if (ultimosValesDesp().length === 0) {
+            <div class="empty-state">
+              <span class="material-symbols-outlined empty-icon">history</span>
+              <p>Sin despachos recientes</p>
+            </div>
+          } @else {
+            <div class="despacho-list">
+              @for (vale of ultimosValesDesp(); track vale.id_vale) {
+                <div class="despacho-item" (click)="irA('/GestionAlmacen/vale/detalle/' + vale.id_vale)">
+                  <div class="despacho-icon-wrap">
+                    <span class="material-symbols-outlined">local_shipping</span>
+                  </div>
+                  <div class="despacho-info">
+                    <span class="despacho-code">{{ vale.cod_vale }}</span>
+                    <span class="despacho-sub">{{ vale.solicitado_por }} · {{ vale.materiales.length }} ítems</span>
+                  </div>
+                  <div class="despacho-right">
+                    <span class="despacho-fecha">{{ formatFecha(vale.fecha_despacho) }}</span>
+                    <span class="estado-desp">Despachado</span>
+                  </div>
+                </div>
+              }
+            </div>
+          }
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ── Accesos rápidos ────────────────────────────────── -->
+    <div class="quick-actions">
+      <h2 class="section-title">
+        <span class="material-symbols-outlined">bolt</span>
+        Accesos Rápidos
+      </h2>
+      <div class="qa-grid">
+        <button class="qa-card" (click)="irA('/GestionAlmacen/material/registrar')">
+          <div class="qa-icon-wrap" style="background:rgba(16,185,129,0.12); color:#10b981">
+            <span class="material-symbols-outlined">add_box</span>
+          </div>
+          <span class="qa-label">Registrar Material</span>
+        </button>
+        <button class="qa-card" (click)="irA('/GestionAlmacen/vale/crear')">
+          <div class="qa-icon-wrap" style="background:rgba(245,158,11,0.12); color:#f59e0b">
+            <span class="material-symbols-outlined">receipt_long</span>
+          </div>
+          <span class="qa-label">Crear Vale</span>
+        </button>
+        <button class="qa-card" (click)="irA('/GestionAlmacen/material/kardex')">
+          <div class="qa-icon-wrap" style="background:rgba(59,130,246,0.12); color:#3b82f6">
+            <span class="material-symbols-outlined">inventory</span>
+          </div>
+          <span class="qa-label">Consultar Kardex</span>
+        </button>
+        <button class="qa-card" (click)="irA('/GestionAlmacen/materiales-reservados')">
+          <div class="qa-icon-wrap" style="background:rgba(139,92,246,0.12); color:#8b5cf6">
+            <span class="material-symbols-outlined">bookmark</span>
+          </div>
+          <span class="qa-label">Materiales Reservados</span>
+        </button>
+        <button class="qa-card" (click)="irA('/GestionAlmacen/nota-salida/generar')">
+          <div class="qa-icon-wrap" style="background:rgba(239,68,68,0.12); color:#ef4444">
+            <span class="material-symbols-outlined">output</span>
+          </div>
+          <span class="qa-label">Generar Nota de Salida</span>
+        </button>
+        <button class="qa-card" (click)="irA('/GestionAlmacen/categoria-material')">
+          <div class="qa-icon-wrap" style="background:rgba(20,184,166,0.12); color:#14b8a6">
+            <span class="material-symbols-outlined">category</span>
+          </div>
+          <span class="qa-label">Categorías</span>
+        </button>
+        <button class="qa-card" (click)="irA('/GestionAlmacen/unidad-medida')">
+          <div class="qa-icon-wrap" style="background:rgba(99,102,241,0.12); color:#6366f1">
+            <span class="material-symbols-outlined">square_foot</span>
+          </div>
+          <span class="qa-label">Unidades de Medida</span>
+        </button>
+        <button class="qa-card" (click)="irA('/GestionAlmacen/vale')">
+          <div class="qa-icon-wrap" style="background:rgba(16,185,129,0.12); color:#10b981">
+            <span class="material-symbols-outlined">list_alt</span>
+          </div>
+          <span class="qa-label">Listado de Vales</span>
+        </button>
+      </div>
+    </div>
+
+  }
+</div>

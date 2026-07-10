@@ -1,0 +1,365 @@
+<div class="dashboard-wrapper">
+
+  <!-- ── Estado de carga / error ───────────────────────────── -->
+  @if (cargando()) {
+    <div class="loading-state">
+      <div class="spinner-ring"></div>
+      <p>Cargando panel de control de mantenimiento…</p>
+    </div>
+  } @else if (error()) {
+    <div class="error-state">
+      <span class="material-symbols-outlined error-icon">cloud_off</span>
+      <p>{{ error() }}</p>
+      <button class="btn-retry" (click)="cargarDatos()">
+        <span class="material-symbols-outlined">refresh</span> Reintentar
+      </button>
+    </div>
+  } @else {
+
+    <!-- ── Encabezado ─────────────────────────────────────── -->
+    <div class="dash-header">
+      <div class="dash-header-left">
+        <div class="dash-icon-wrap">
+          <span class="material-symbols-outlined">build</span>
+        </div>
+        <div>
+          <h1 class="dash-title">Panel de Control · Mantenimiento Técnico</h1>
+          <p class="dash-subtitle">Bienvenido, <strong>{{ nombreUsuario() }}</strong> · Gestión de órdenes de trabajo y planes preventivos</p>
+        </div>
+      </div>
+      <div class="dash-header-right">
+        <button class="btn-refresh" (click)="cargarDatos()" title="Actualizar datos">
+          <span class="material-symbols-outlined">refresh</span>
+        </button>
+        <button class="btn-primary-sm" (click)="irA('/GestionMantenimiento/orden-trabajo/crear')">
+          <span class="material-symbols-outlined">add_task</span>
+          Crear OT
+        </button>
+        <button class="btn-accent-sm" (click)="irA('/GestionMantenimiento/calendario')">
+          <span class="material-symbols-outlined">calendar_month</span>
+          Calendario
+        </button>
+      </div>
+    </div>
+
+    <!-- ── Resumen de Órdenes y Cumplimiento ─────────────────── -->
+    <div class="availability-bar-card">
+      <div class="avail-info">
+        <span class="material-symbols-outlined avail-icon">checklist</span>
+        <div>
+          <span class="avail-label">Cumplimiento de OTs (Cerradas)</span>
+          <span class="avail-pct">{{ porcentajeCompletado() }}%</span>
+        </div>
+      </div>
+      <div class="avail-bar-wrap">
+        <div class="avail-bar" [style.width.%]="porcentajeCompletado()"></div>
+      </div>
+      <div class="avail-detail">
+        <span class="avail-chip chip-cerrada">
+          <span class="material-symbols-outlined">task_alt</span>
+          {{ ordenesCerradas() }} Cerradas
+        </span>
+        <span class="avail-chip chip-activa">
+          <span class="material-symbols-outlined">hourglass_empty</span>
+          {{ ordenesActivas() }} Activas
+        </span>
+        <span class="avail-chip chip-pendiente">
+          <span class="material-symbols-outlined">priority_high</span>
+          {{ ordenesPendientes() }} Pendientes
+        </span>
+      </div>
+    </div>
+
+    <!-- ── KPI Cards ──────────────────────────────────────── -->
+    <div class="kpi-grid">
+
+      <div class="kpi-card kpi-rose" (click)="irA('/GestionMantenimiento/orden-trabajo')">
+        <div class="kpi-body">
+          <span class="kpi-label">Órdenes de Trabajo</span>
+          <span class="kpi-value">{{ totalOrdenes() }}</span>
+          <span class="kpi-desc">OTs registradas en total</span>
+        </div>
+        <div class="kpi-icon-wrap kpi-icon-rose">
+          <span class="material-symbols-outlined">assignment</span>
+        </div>
+      </div>
+
+      <div class="kpi-card kpi-amber" [class.kpi-alert]="ordenesPendientes() > 0" (click)="irA('/GestionMantenimiento/orden-trabajo')">
+        <div class="kpi-body">
+          <span class="kpi-label">OTs Pendientes</span>
+          <span class="kpi-value">{{ ordenesPendientes() }}</span>
+          <span class="kpi-desc">sin asignar o iniciar</span>
+        </div>
+        <div class="kpi-icon-wrap kpi-icon-amber">
+          <span class="material-symbols-outlined">pending_actions</span>
+        </div>
+        @if (ordenesPendientes() > 0) {
+          <div class="kpi-alert-badge">
+            <span class="material-symbols-outlined">notification_important</span>
+          </div>
+        }
+      </div>
+
+      <div class="kpi-card kpi-blue" (click)="irA('/GestionMantenimiento/orden-trabajo')">
+        <div class="kpi-body">
+          <span class="kpi-label">OTs Activas</span>
+          <span class="kpi-value">{{ ordenesActivas() }}</span>
+          <span class="kpi-desc">trabajos en proceso</span>
+        </div>
+        <div class="kpi-icon-wrap kpi-icon-blue">
+          <span class="material-symbols-outlined">engineering</span>
+        </div>
+      </div>
+
+      <div class="kpi-card kpi-purple" (click)="irA('/GestionMantenimiento/orden-trabajo')">
+        <div class="kpi-body">
+          <span class="kpi-label">En Revisión</span>
+          <span class="kpi-value">{{ ordenesRevision() }}</span>
+          <span class="kpi-desc">esperando conformidad</span>
+        </div>
+        <div class="kpi-icon-wrap kpi-icon-purple">
+          <span class="material-symbols-outlined">rate_review</span>
+        </div>
+      </div>
+
+      <div class="kpi-card kpi-green" (click)="irA('/GestionMantenimiento/plan-mantenimiento')">
+        <div class="kpi-body">
+          <span class="kpi-label">Planes Activos</span>
+          <span class="kpi-value">{{ planesActivos() }}</span>
+          <span class="kpi-desc">de un total de {{ totalPlanes() }}</span>
+        </div>
+        <div class="kpi-icon-wrap kpi-icon-green">
+          <span class="material-symbols-outlined">calendar_view_week</span>
+        </div>
+      </div>
+
+      <div class="kpi-card kpi-red" (click)="irA('/GestionMantenimiento/orden-trabajo')">
+        <div class="kpi-body">
+          <span class="kpi-label">Correctivos</span>
+          <span class="kpi-value">{{ otsCorrectivas() }}</span>
+          <span class="kpi-desc">{{ pctCorrectivas() }}% del total general</span>
+        </div>
+        <div class="kpi-icon-wrap kpi-icon-red">
+          <span class="material-symbols-outlined">report</span>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ── Main content grid ──────────────────────────────── -->
+    <div class="content-grid">
+
+      <!-- OTs Críticas (Correctivas Urgentes) -->
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title-wrap">
+            <span class="material-symbols-outlined panel-icon icon-red">warning</span>
+            <h2 class="panel-title">Mantenimientos Correctivos Urgentes</h2>
+          </div>
+          <button class="btn-link" (click)="irA('/GestionMantenimiento/orden-trabajo')">Ver todas →</button>
+        </div>
+        <div class="panel-body">
+          @if (otsCriticas().length === 0) {
+            <div class="empty-state">
+              <span class="material-symbols-outlined empty-icon" style="color:#10b981">verified_user</span>
+              <p style="color:#10b981;font-weight:600">¡Sin correctivos pendientes!</p>
+              <p class="text-muted-sm">Todas las fallas urgentes han sido solucionadas</p>
+            </div>
+          } @else {
+            <div class="critical-ot-list">
+              @for (ot of otsCriticas(); track ot.id_ot) {
+                <div class="critical-ot-item" (click)="irA('/GestionMantenimiento/orden-trabajo/detalle/' + ot.id_ot)">
+                  <div class="critical-ot-icon">
+                    <span class="material-symbols-outlined">report_problem</span>
+                  </div>
+                  <div class="critical-ot-info">
+                    <span class="ot-code">{{ ot.cod_ot }} · <small class="eq-code">{{ ot.cod_equipo }} [{{ ot.placa_equipo }}]</small></span>
+                    <span class="ot-falla">{{ ot.descripcion_falla || 'Falla no especificada' }}</span>
+                    <span class="ot-sistema">Sistema: {{ ot.nombre_sistema || 'General' }}</span>
+                  </div>
+                  <div class="critical-ot-right">
+                    <span class="ot-date">{{ formatFecha(ot.fecha_creacion) }}</span>
+                    <span class="estado-chip" [ngClass]="getEstadoOTClass(ot.estado)">{{ ot.estado }}</span>
+                  </div>
+                </div>
+              }
+            </div>
+          }
+        </div>
+      </div>
+
+      <!-- Últimas órdenes de trabajo -->
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title-wrap">
+            <span class="material-symbols-outlined panel-icon icon-rose">assignment</span>
+            <h2 class="panel-title">Últimas Órdenes Registradas</h2>
+          </div>
+          <button class="btn-link" (click)="irA('/GestionMantenimiento/orden-trabajo')">Ver historial →</button>
+        </div>
+        <div class="panel-body">
+          @if (ultimasOTs().length === 0) {
+            <div class="empty-state">
+              <span class="material-symbols-outlined empty-icon">assignment</span>
+              <p>No hay órdenes de trabajo recientes</p>
+            </div>
+          } @else {
+            <table class="mini-table">
+              <thead>
+                <tr>
+                  <th>Código</th>
+                  <th>Equipo</th>
+                  <th>Tipo</th>
+                  <th>Fecha</th>
+                  <th>Estado</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (ot of ultimasOTs(); track ot.id_ot) {
+                  <tr (click)="irA('/GestionMantenimiento/orden-trabajo/detalle/' + ot.id_ot)" class="row-clickable">
+                    <td><span class="code-chip">{{ ot.cod_ot }}</span></td>
+                    <td>
+                      <div class="eq-info-cell">
+                        <span class="eq-title">{{ ot.cod_equipo }}</span>
+                        <span class="eq-subtitle">{{ ot.placa_equipo }}</span>
+                      </div>
+                    </td>
+                    <td>
+                      <span class="tipo-badge" [class.tipo-prev]="ot.tipo_ot === 'PREVENTIVA'" [class.tipo-corr]="ot.tipo_ot === 'CORRECTIVA'">
+                        {{ ot.tipo_ot }}
+                      </span>
+                    </td>
+                    <td class="text-muted">{{ formatFecha(ot.fecha_creacion) }}</td>
+                    <td>
+                      <span class="estado-chip" [ngClass]="getEstadoOTClass(ot.estado)">{{ ot.estado }}</span>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          }
+        </div>
+      </div>
+
+      <!-- Tipo de Mantenimiento (Preventivo vs Correctivo) -->
+      <div class="panel panel-medium">
+        <div class="panel-header">
+          <div class="panel-title-wrap">
+            <span class="material-symbols-outlined panel-icon icon-blue">donut_large</span>
+            <h2 class="panel-title">Distribución por Tipo de Trabajo</h2>
+          </div>
+          <button class="btn-link" (click)="irA('/GestionMantenimiento/plan-mantenimiento')">Planes →</button>
+        </div>
+        <div class="panel-body">
+          <div class="type-chart-container">
+            <div class="type-metric">
+              <div class="metric-label">Mantenimientos Preventivos</div>
+              <div class="metric-value color-prev">{{ otsPreventivas() }} <small>({{ pctPreventivas() }}%)</small></div>
+              <div class="metric-progress-bar">
+                <div class="progress-fill bg-prev" [style.width.%]="pctPreventivas()"></div>
+              </div>
+            </div>
+            <div class="type-metric" style="margin-top: 1.25rem;">
+              <div class="metric-label">Mantenimientos Correctivos</div>
+              <div class="metric-value color-corr">{{ otsCorrectivas() }} <small>({{ pctCorrectivas() }}%)</small></div>
+              <div class="metric-progress-bar">
+                <div class="progress-fill bg-corr" [style.width.%]="pctCorrectivas()"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- OTs por Flota -->
+      <div class="panel panel-medium">
+        <div class="panel-header">
+          <div class="panel-title-wrap">
+            <span class="material-symbols-outlined panel-icon icon-purple">directions_bus</span>
+            <h2 class="panel-title">Órdenes de Trabajo por Flota</h2>
+          </div>
+          <button class="btn-link" (click)="irA('/GestionMantenimiento/orden-trabajo')">OTs →</button>
+        </div>
+        <div class="panel-body">
+          @if (distribucionFlotas().length === 0) {
+            <div class="empty-state">
+              <span class="material-symbols-outlined empty-icon">directions_bus</span>
+              <p>Sin datos de flotas</p>
+            </div>
+          } @else {
+            <div class="cat-list">
+              @for (f of distribucionFlotas(); track f.nombre; let i = $index) {
+                <div class="cat-item">
+                  <div class="cat-info">
+                    <span class="cat-dot" [style.background]="colors[i % colors.length]"></span>
+                    <span class="cat-name">{{ f.nombre }}</span>
+                  </div>
+                  <div class="cat-bar-wrap">
+                    <div class="cat-bar"
+                         [style.width.%]="f.pct"
+                         [style.background]="colors[i % colors.length]">
+                    </div>
+                  </div>
+                  <span class="cat-pct">{{ f.cantidad }} <small>({{ f.pct }}%)</small></span>
+                </div>
+              }
+            </div>
+          }
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ── Accesos rápidos ────────────────────────────────── -->
+    <div class="quick-actions">
+      <h2 class="section-title">
+        <span class="material-symbols-outlined">bolt</span>
+        Accesos Rápidos
+      </h2>
+      <div class="qa-grid">
+        <button class="qa-card" (click)="irA('/GestionMantenimiento/orden-trabajo/crear')">
+          <div class="qa-icon-wrap" style="background:rgba(225,29,72,0.12); color:#e11d48">
+            <span class="material-symbols-outlined">add_task</span>
+          </div>
+          <span class="qa-label">Registrar OT Manual</span>
+        </button>
+        <button class="qa-card" (click)="irA('/GestionMantenimiento/plan-mantenimiento/crear')">
+          <div class="qa-icon-wrap" style="background:rgba(59,130,246,0.12); color:#3b82f6">
+            <span class="material-symbols-outlined">event_note</span>
+          </div>
+          <span class="qa-label">Crear Plan Preventivo</span>
+        </button>
+        <button class="qa-card" (click)="irA('/GestionMantenimiento/calendario')">
+          <div class="qa-icon-wrap" style="background:rgba(16,185,129,0.12); color:#10b981">
+            <span class="material-symbols-outlined">calendar_month</span>
+          </div>
+          <span class="qa-label">Calendario Actividades</span>
+        </button>
+        <button class="qa-card" (click)="irA('/GestionMantenimiento/estrategia')">
+          <div class="qa-icon-wrap" style="background:rgba(139,92,246,0.12); color:#8b5cf6">
+            <span class="material-symbols-outlined">format_list_bulleted</span>
+          </div>
+          <span class="qa-label">Estrategias Mantenimiento</span>
+        </button>
+        <button class="qa-card" (click)="irA('/GestionMantenimiento/sistema-equipo')">
+          <div class="qa-icon-wrap" style="background:rgba(245,158,11,0.12); color:#f59e0b">
+            <span class="material-symbols-outlined">settings</span>
+          </div>
+          <span class="qa-label">Sistemas de Equipos</span>
+        </button>
+        <button class="qa-card" (click)="irA('/GestionMantenimiento/actividad-sistema')">
+          <div class="qa-icon-wrap" style="background:rgba(20,184,166,0.12); color:#14b8a6">
+            <span class="material-symbols-outlined">playlist_add_check</span>
+          </div>
+          <span class="qa-label">Actividades por Sistema</span>
+        </button>
+        <button class="qa-card" (click)="irA('/GestionMantenimiento/orden-trabajo')">
+          <div class="qa-icon-wrap" style="background:rgba(99,102,241,0.12); color:#6366f1">
+            <span class="material-symbols-outlined">assignment</span>
+          </div>
+          <span class="qa-label">Listado de OTs</span>
+        </button>
+      </div>
+    </div>
+
+  }
+</div>
